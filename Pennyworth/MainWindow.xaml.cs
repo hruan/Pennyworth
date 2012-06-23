@@ -30,7 +30,6 @@ namespace Pennyworth {
                 var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
                     .Select(p => new FileInfo(p));
 
-                imageResult.Source = _yayImage;
                 foreach (var assembly in DropHelper.GetAssembliesFromDropData(paths)) {
                     var currentFile = assembly;
                     using (var helper = new AssemblyTestRunner()) {
@@ -39,8 +38,8 @@ namespace Pennyworth {
                 }
 
                 offendingMembers.ItemsSource = offendingItems;
+                imageResult.Source = offendingItems.Any() ? _nayImage : _yayImage;
                 log.Items.Add("==== MARK ====");
-                log.ScrollIntoView(log.Items[log.Items.Count - 1]);
             } else {
                 Debug.WriteLine("No files.");
             }
