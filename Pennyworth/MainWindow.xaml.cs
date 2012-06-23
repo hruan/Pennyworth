@@ -18,6 +18,8 @@ namespace Pennyworth {
 
         public MainWindow() {
             InitializeComponent();
+
+            Debug.Print("ApplicationBase in current app domain: {0}", AppDomain.CurrentDomain.BaseDirectory);
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
@@ -25,33 +27,14 @@ namespace Pennyworth {
 
             if (e.Data.GetDataPresent("FileDrop")) {
                 var offendingItems = new List<OffendingMember>();
-                var omc            = new OffendingMemberComparer();
                 var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
                     .Select(p => new FileInfo(p));
 
                 imageResult.Source = _yayImage;
                 foreach (var assembly in DropHelper.GetAssembliesFromDropData(paths)) {
                     var currentFile = assembly;
-                    var tester      = new AssemblyTest(currentFile);
-
-                    Log(String.Format("Peeking inside {0}", currentFile));
-
-                    if (tester.HasPublicFields()) {
-                        Log(String.Format("{0} has public fields!", currentFile));
-                        imageResult.Source = _nayImage;
-                        offendingItems.AddRange(tester.PublicFields.Select(fi => new OffendingMember {
-                            Path       = currentFile,
-                            MemberInfo = fi
-                        }).Distinct(omc));
-                    }
-
-                    if (tester.GetRecursiveMembers().Any()) {
-                        Log(String.Format("{0} has recursive members!", currentFile));
-                        imageResult.Source = _nayImage;
-                        offendingItems.AddRange(tester.GetRecursiveMembers().Select(methodInfo => new OffendingMember {
-                            Path       = currentFile,
-                            MemberInfo = methodInfo
-                        }).Distinct(omc));
+                    using (var helper = new AssemblyTestRunner()) {
+                        offendingItems.AddRange(helper.RunTestsFor(currentFile));
                     }
                 }
 
@@ -72,19 +55,11 @@ namespace Pennyworth {
         }
     }
 
-    internal struct OffendingMember {
+    [Serializable]
+    public struct OffendingMember {
         public String Path { get; set; }
-        public MemberInfo MemberInfo { get; set; }
+        public String Name { get; set; }
+        public String DeclaringType { get; set; }
     }
 
-    internal class OffendingMemberComparer : EqualityComparer<OffendingMember> {
-        public override bool Equals(OffendingMember x, OffendingMember y) {
-            return x.MemberInfo.DeclaringType == y.MemberInfo.DeclaringType
-                   && x.MemberInfo.Name == y.MemberInfo.Name;
-        }
-
-        public override int GetHashCode(OffendingMember obj) {
-            return obj.MemberInfo.DeclaringType.GetHashCode();
-        }
-    }
 }

@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 
 namespace Pennyworth {
-    public class AssemblyTest {
+    public sealed class AssemblyTest : MarshalByRefObject {
         private readonly Assembly _assembly;
         private readonly IEnumerable<FieldInfo> _publicFields;
         private static readonly Dictionary<Int16, OpCode> _opcodes;
@@ -20,6 +20,8 @@ namespace Pennyworth {
         }
 
         public AssemblyTest(String path) {
+            Debug.Print("Loading {0}", path);
+
             try {
                 _assembly = Assembly.LoadFrom(path);
                 _publicFields = _assembly.GetTypes()
@@ -35,15 +37,20 @@ namespace Pennyworth {
             }
         }
 
-        public IEnumerable<FieldInfo> PublicFields {
-            get { return _publicFields; }
+        public IEnumerable<OffendingMember> GetPublicFields() {
+            return _publicFields.Select(fi => new OffendingMember {
+                Path = _assembly.Location,
+                Name = fi.Name,
+                DeclaringType = fi.DeclaringType.ToString()
+            }).ToList();
         }
 
         public Boolean HasPublicFields() {
             return _publicFields != null && _publicFields.Any();
         }
 
-        public IEnumerable<MethodInfo> GetRecursiveMembers() {
+        public IEnumerable<OffendingMember> GetRecursiveMembers() {
+            Debug.Print("Executing in AppDomain {0}", AppDomain.CurrentDomain.FriendlyName);
             var methodByteCodeMap = _assembly.GetTypes()
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance
                                               | BindingFlags.NonPublic
@@ -53,6 +60,7 @@ namespace Pennyworth {
                 .Where(mi => mi.GetMethodBody() != null)
                 .ToDictionary(mi => mi,
                               mi => mi.GetMethodBody().GetILAsByteArray());
+            var recursiveMethods = new List<MethodInfo>();
 
             foreach (var kvp in methodByteCodeMap) {
                 var pos = 0;
@@ -101,7 +109,7 @@ namespace Pennyworth {
                                     var operand       = BitConverter.ToInt32(byteCodes, pos + instruction.Size);
                                     var callingMethod = kvp.Key.GetBaseDefinition();
 
-                                    if (IsRecursiveCall(callingMethod, operand)) yield return kvp.Key;
+                                    if (IsRecursiveCall(callingMethod, operand)) recursiveMethods.Add(kvp.Key);// yield return kvp.Key;
                                 }
 
                                 break;
@@ -113,6 +121,12 @@ namespace Pennyworth {
                     }
                 }
             }
+
+            return recursiveMethods.Select(mi => new OffendingMember {
+                Name = mi.Name,
+                DeclaringType = mi.DeclaringType.ToString(),
+                Path = mi.ReflectedType.Assembly.Location
+            }).ToList();
         }
 
         private static Boolean IsRecursiveCall(MethodInfo callingMethod, Int32 operand) {
@@ -127,7 +141,9 @@ namespace Pennyworth {
                     Debug.Print("Couldn't resolve method call in {0}: {1}", callingMethod.Name, ex.Message);
                 }
 
-                if (calledMethod != null
+                return calledMethod != null
+                       && callingMethod == calledMethod;
+                /* if (calledMethod != null
                     && calledMethod.ReflectedType.AssemblyQualifiedName == callingMethod.ReflectedType.AssemblyQualifiedName) {
                     Func<MethodBase, MethodInfo> getMethod =
                         mi => mi.ReflectedType.GetMethod(mi.Name,
@@ -146,7 +162,7 @@ namespace Pennyworth {
                     var called  = getMethod(calledMethod);
                     return (!(calling == null || called == null)
                             && calling == called);
-                }
+                } */
             }
 
             return false;

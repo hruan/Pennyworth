@@ -25,15 +25,15 @@
                 <ListView HorizontalAlignment="Stretch" Name="offendingMembers" VerticalAlignment="Stretch">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Member" DisplayMemberBinding="{Binding Path=MemberInfo.Name}"/>
-                            <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Path=MemberInfo.DeclaringType}" />
+                            <GridViewColumn Header="Member" DisplayMemberBinding="{Binding Path=Name}"/>
+                            <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Path=DeclaringType}" />
                             <GridViewColumn Header="Path" DisplayMemberBinding="{Binding Path=Path}" />
                         </GridView>
                     </ListView.View>
                 </ListView>
             </Grid>
         </GroupBox>
-        <TextBlock HorizontalAlignment="Stretch" Name="textBlock1" Text="Drag and drop files and/or folders into the window." VerticalAlignment="Stretch" TextWrapping="Wrap" Grid.Column="0" Grid.Row="1" Margin="6" />
+        <TextBlock HorizontalAlignment="Stretch" Name="textBlock1" Text="Drag and drop files and/or folders into the window." VerticalAlignment="Bottom" TextWrapping="Wrap" Grid.Column="0" Grid.Row="1" Margin="6" />
         <GroupBox Grid.Column="1" Grid.Row="1" Header="Log" HorizontalAlignment="Stretch" Name="groupBox1" VerticalAlignment="Stretch">
             <Grid>
                 <ListBox HorizontalAlignment="Stretch" Name="log" VerticalAlignment="Stretch" />
