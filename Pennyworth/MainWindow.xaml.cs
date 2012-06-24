@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Media.Imaging;
+
+using NLog;
 
 namespace Pennyworth {
     /// <summary>
@@ -13,44 +13,40 @@ namespace Pennyworth {
     /// Icons from: http://www.iconfinder.com/browse/iconset/30_Free_Black_ToolBar_Icons/#readme
     /// </summary>
     public partial class MainWindow {
-        private readonly BitmapImage _yayImage = new BitmapImage(new Uri("/Images/Yay.png", UriKind.Relative));
-        private readonly BitmapImage _nayImage = new BitmapImage(new Uri("/Images/Nay.png", UriKind.Relative));
+        private readonly BitmapImage _yayImage;
+        private readonly BitmapImage _nayImage;
+
+        private readonly Logger _logger;
 
         public MainWindow() {
             InitializeComponent();
 
-            Debug.Print("ApplicationBase in current app domain: {0}", AppDomain.CurrentDomain.BaseDirectory);
+            _logger = LogManager.GetLogger(GetType().Name);
+            var target = LogManager.Configuration.AllTargets.FirstOrDefault() as NLog.Targets.MemoryTarget;
+            if (target != null) {
+                log.ItemsSource = target.Logs;
+            }
+
+            _yayImage = new BitmapImage(new Uri("/Images/Yay.png", UriKind.Relative));
+            _nayImage = new BitmapImage(new Uri("/Images/Nay.png", UriKind.Relative));
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
-            offendingMembers.ItemsSource = null;
-
             if (e.Data.GetDataPresent("FileDrop")) {
-                var offendingItems = new List<OffendingMember>();
                 var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
                     .Select(p => new FileInfo(p));
 
-                foreach (var assembly in DropHelper.GetAssembliesFromDropData(paths)) {
-                    var currentFile = assembly;
-                    using (var helper = new AssemblyTestRunner()) {
-                        offendingItems.AddRange(helper.RunTestsFor(currentFile));
-                    }
+                using (var helper = new AssemblyTestRunner()) {
+                    helper.RunTestsFor(DropHelper.GetAssembliesFromDropData(paths));
+
+                    imageResult.Source = helper.Offences.Any() ? _nayImage : _yayImage;
+                    offendingMembers.ItemsSource = helper.Offences;
                 }
-
-                offendingMembers.ItemsSource = offendingItems;
-                imageResult.Source = offendingItems.Any() ? _nayImage : _yayImage;
-                log.Items.Add("==== MARK ====");
             } else {
-                Debug.WriteLine("No files.");
+                _logger.Info("No assemblies found among dropped data.");
             }
-        }
 
-        private void Log(String message, Boolean timestamp = true) {
-            if (timestamp) {
-                log.Items.Add(String.Format("{0:o} {1}", DateTime.Now, message));
-            } else {
-                log.Items.Add(String.Format("{0}", message));
-            }
+            log.Items.Refresh();
         }
     }
 }

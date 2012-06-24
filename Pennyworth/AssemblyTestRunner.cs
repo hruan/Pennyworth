@@ -4,52 +4,66 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using NLog;
 
 namespace Pennyworth {
     public sealed class AssemblyTestRunner : IDisposable {
         private AppDomain _appDomain;
         private Boolean _hasBeenUnloaded;
+        private readonly Logger _logger;
 
-        public IEnumerable<OffendingMember> RunTestsFor(String path) {
-            Debug.Assert(path != null);
+        public AssemblyTestRunner() {
+            Offences = new List<OffendingMember>();
+            _logger = LogManager.GetLogger(GetType().Name);
+        }
+
+        public List<OffendingMember> Offences { get; private set; }
+
+        public void RunTestsFor(IEnumerable<String> paths) {
+            Debug.Assert(paths != null);
 
             const String cacheDirName = "Cache";
-            var cacheDirPath = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar + cacheDirName;
+            var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+                               + Path.DirectorySeparatorChar + cacheDirName;
 
-            _appDomain = AppDomain.CreateDomain(Path.GetFileNameWithoutExtension(path), null, new AppDomainSetup {
-                CachePath = cacheDirPath,
+            _appDomain = AppDomain.CreateDomain("worker", null, new AppDomainSetup {
+                CachePath            = cacheDirPath,
                 DisallowCodeDownload = true,
-                ShadowCopyFiles = "true"
+                ShadowCopyFiles      = "true"
             });
 
-            var offendingItems = new List<OffendingMember>();
+            _logger.Trace("Created worker AppDomain.");
+            foreach (var path in paths) RunTestsFor(path);
+        }
+
+        private void RunTestsFor(String path) {
+            Debug.Assert(path != null);
+
+            _logger.Debug("Testing {0}", path);
             var tester = (AssemblyTest) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
                                                                                typeof(AssemblyTest).FullName,
-                                                                               ignoreCase: false,
+                                                                               ignoreCase:  false,
                                                                                bindingAttr: BindingFlags.Default,
-                                                                               binder: null,
-                                                                               args: new[] {path},
-                                                                               culture: null,
+                                                                               binder:      null,
+                                                                               args:        new[] {path},
+                                                                               culture:     null,
                                                                                activationAttributes: null);
-            // Log(String.Format("Peeking inside {0}", currentFile));
-
             if (tester.HasPublicFields()) {
-                offendingItems.AddRange(tester.GetPublicFields());
+                _logger.Debug("{0} has public fields!", path);
+                Offences.AddRange(tester.GetPublicFields());
             }
 
             if (tester.GetRecursiveMembers().Any()) {
-                offendingItems.AddRange(tester.GetRecursiveMembers());
+                _logger.Debug("{0} has recursive members!", path);
+                Offences.AddRange(tester.GetRecursiveMembers());
             }
-
-            return offendingItems;
         }
 
         public void Dispose() {
             if (!_hasBeenUnloaded) {
-                Debug.Print("Unloading {0}", _appDomain.FriendlyName);
                 AppDomain.Unload(_appDomain);
                 _hasBeenUnloaded = true;
+                _logger.Trace("Worker domain unloaded.");
             }
         }
     }
