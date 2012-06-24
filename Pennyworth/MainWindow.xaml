@@ -25,10 +25,10 @@
                 <ListView HorizontalAlignment="Stretch" Name="offendingMembers" VerticalAlignment="Stretch">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Header="Member" DisplayMemberBinding="{Binding Path=Name}"/>
-                            <GridViewColumn Header="Member type" DisplayMemberBinding="{Binding Path=MemberType}"/>
-                            <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Path=DeclaringType}" />
-                            <GridViewColumn Header="Path" DisplayMemberBinding="{Binding Path=Path}" />
+                            <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Path=Name}"/>
+                            <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Path=MemberType}"/>
+                            <GridViewColumn Header="Declared in" DisplayMemberBinding="{Binding Path=DeclaringType}" />
+                            <GridViewColumn Header="Assembly path" DisplayMemberBinding="{Binding Path=Path}" />
                         </GridView>
                     </ListView.View>
                 </ListView>
