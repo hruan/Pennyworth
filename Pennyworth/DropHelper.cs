@@ -6,27 +6,33 @@ using System.Linq;
 namespace Pennyworth {
     public static class DropHelper {
         public static IEnumerable<String> GetAssembliesFromDropData(IEnumerable<FileInfo> data) {
-            Func<FileInfo, Boolean> isDir = fi => ((fi.Attributes & FileAttributes.Directory) == FileAttributes.Directory);
+            Func<FileInfo, Boolean> isDir  = fi => ((fi.Attributes & FileAttributes.Directory) == FileAttributes.Directory);
             Func<FileInfo, Boolean> isFile = fi => ((fi.Attributes & FileAttributes.Directory) != FileAttributes.Directory);
+
             var files = data.Where(isFile);
-            var dirs  = data
-                .Where(isDir)
-                .Select(fi => {
-                            if (fi.FullName.EndsWith("bin", StringComparison.OrdinalIgnoreCase))
-                                return new FileInfo(fi.Directory.FullName);
+            var dirs  = data.Where(isDir);
 
-                            return fi;
-                        })
-                .SelectMany(fi => Directory.EnumerateDirectories(fi.FullName, "bin", SearchOption.AllDirectories));
-            var firstAssemblies = dirs.Select(dir => Directory.EnumerateFiles(dir, "*.exe", SearchOption.AllDirectories)
-                                                         .FirstOrDefault(path => !path.Contains("vshost")))
-                .Where(dir => !String.IsNullOrEmpty(dir));
+            var assembliesInDirs =
+                dirs.SelectMany(dir => Directory.EnumerateFiles(dir.FullName, "*.exe", SearchOption.AllDirectories)
+                                                .Where(path => !path.Contains("vshost")));
 
-            return files.Select(fi => fi.FullName)
-                .Concat(firstAssemblies)
-                .Where(path => Path.HasExtension(path)
-                               && (path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                                   || path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)));
+            return files.Select(fi => fi.FullName).Concat(DiscardSimilarFiles(assembliesInDirs.ToList()));
+        }
+
+        private static IEnumerable<String> DiscardSimilarFiles(List<String> assemblies) {
+            var fileNames      = assemblies.Select(Path.GetFileName).Distinct();
+            var namePathLookup = assemblies.ToLookup(Path.GetFileName);
+
+            foreach (var file in fileNames) {
+                var paths = namePathLookup[file].ToList();
+                if (paths.Any()) {
+                    if (paths.Count > 1) {
+                        paths.Sort(String.CompareOrdinal);
+                    }
+
+                    yield return paths.First();
+                }
+            }
         }
     }
 }
