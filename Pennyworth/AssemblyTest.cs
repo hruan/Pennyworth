@@ -20,8 +20,6 @@ namespace Pennyworth {
         }
 
         public AssemblyTest(String path) {
-            Debug.Print("Loading {0}", path);
-
             try {
                 _assembly = Assembly.LoadFrom(path);
                 _publicFields = _assembly.GetTypes()
@@ -51,7 +49,6 @@ namespace Pennyworth {
         }
 
         public IEnumerable<OffendingMember> GetRecursiveMembers() {
-            Debug.Print("Executing in AppDomain {0}", AppDomain.CurrentDomain.FriendlyName);
             var methodByteCodeMap = _assembly.GetTypes()
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance
                                               | BindingFlags.NonPublic
@@ -64,17 +61,17 @@ namespace Pennyworth {
             var recursiveMethods = new List<MethodInfo>();
 
             foreach (var kvp in methodByteCodeMap) {
-                var pos = 0;
+                var offset = 0;
                 var byteCodes = kvp.Value;
 
-                while (pos < byteCodes.Length) {
-                    Int16 opcode = byteCodes[pos];
+                while (offset < byteCodes.Length) {
+                    Int16 opcode = byteCodes[offset];
 
                     // Multibyte opcode?
                     // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
                     // Partition III, Table 1
                     if ((opcode & 0xfe) == 0) {
-                        opcode = (Int16) ((opcode << 8) | byteCodes[pos + 1]);
+                        opcode = (Int16) (opcode << 8 | byteCodes[offset + 1]);
                     }
 
                     var operandSize = 4;
@@ -102,12 +99,12 @@ namespace Pennyworth {
                                 break;
 
                             case OperandType.InlineSwitch:
-                                operandSize = BitConverter.ToInt32(byteCodes, pos + instruction.Size) * 4;
+                                operandSize = BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4;
                                 break;
 
                             case OperandType.InlineMethod:
                                 if (instruction.FlowControl == FlowControl.Call) {
-                                    var operand       = BitConverter.ToInt32(byteCodes, pos + instruction.Size);
+                                    var operand       = BitConverter.ToInt32(byteCodes, offset + instruction.Size);
                                     var callingMethod = kvp.Key.GetBaseDefinition();
 
                                     if (IsRecursiveCall(callingMethod, operand)) recursiveMethods.Add(kvp.Key);// yield return kvp.Key;
@@ -116,9 +113,9 @@ namespace Pennyworth {
                                 break;
                         }
 
-                        pos += _opcodes[opcode].Size + operandSize;
+                        offset += _opcodes[opcode].Size + operandSize;
                     } else {
-                        pos += (opcode & 0xff00) == 0 ? 1 : 2;
+                        offset += (opcode & 0xff00) == 0 ? 1 : 2;
                     }
                 }
             }

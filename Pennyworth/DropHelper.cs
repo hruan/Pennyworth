@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace Pennyworth {
     public static class DropHelper {
@@ -13,14 +12,14 @@ namespace Pennyworth {
             var dirs  = data
                 .Where(isDir)
                 .Select(fi => {
-                            if (fi.FullName.EndsWith("bin", StringComparison.InvariantCultureIgnoreCase))
+                            if (fi.FullName.EndsWith("bin", StringComparison.OrdinalIgnoreCase))
                                 return new FileInfo(fi.Directory.FullName);
 
                             return fi;
                         })
                 .SelectMany(fi => Directory.EnumerateDirectories(fi.FullName, "bin", SearchOption.AllDirectories));
             var firstAssemblies = dirs.Select(dir => Directory.EnumerateFiles(dir, "*.exe", SearchOption.AllDirectories)
-                    .FirstOrDefault(path => !path.Contains("vshost")))
+                                                         .FirstOrDefault(path => !path.Contains("vshost")))
                 .Where(dir => !String.IsNullOrEmpty(dir));
 
             return files.Select(fi => fi.FullName).Concat(firstAssemblies);
