@@ -13,11 +13,11 @@ namespace Pennyworth {
         private readonly Logger _logger;
 
         public AssemblyTestRunner() {
-            Offences = new List<OffendingMember>();
+            Faults = new List<FaultInfo>();
             _logger = LogManager.GetLogger(GetType().Name);
         }
 
-        public List<OffendingMember> Offences { get; private set; }
+        public List<FaultInfo> Faults { get; private set; }
 
         public Boolean RunTestsFor(IEnumerable<String> paths) {
             Debug.Assert(paths != null);
@@ -62,12 +62,12 @@ namespace Pennyworth {
             if (tester != null) {
                 if (tester.HasPublicFields()) {
                     _logger.Info("{0} has public fields!", path);
-                    Offences.AddRange(tester.GetPublicFields());
+                    Faults.AddRange(tester.GetPublicFields());
                 }
 
-                if (tester.GetRecursiveMembers().Any()) {
+                if (tester.HasRecursiveMembers()) {
                     _logger.Info("{0} has recursive members!", path);
-                    Offences.AddRange(tester.GetRecursiveMembers());
+                    Faults.AddRange(tester.GetRecursiveMembers());
                 }
             }
 
@@ -84,7 +84,7 @@ namespace Pennyworth {
     }
 
     [Serializable]
-    public struct OffendingMember {
+    public struct FaultInfo {
         public String MemberType { get; set; }
         public String Path { get; set; }
         public String Name { get; set; }

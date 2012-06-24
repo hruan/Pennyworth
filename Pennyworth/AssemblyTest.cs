@@ -10,6 +10,8 @@ namespace Pennyworth {
     public sealed class AssemblyTest : MarshalByRefObject {
         private readonly Assembly _assembly;
         private readonly IEnumerable<FieldInfo> _publicFields;
+        private readonly IList<MethodInfo> _recursiveMethods;
+        private readonly String _path;
         private static readonly Dictionary<Int16, OpCode> _opcodes;
 
         static AssemblyTest() {
@@ -21,11 +23,16 @@ namespace Pennyworth {
 
         public AssemblyTest(String path) {
             try {
+                _path     = path;
                 _assembly = Assembly.LoadFrom(path);
+
                 _publicFields = _assembly.GetTypes()
                     .SelectMany(t => t.GetFields(BindingFlags.Instance | BindingFlags.Public))
                     // Apparently, enums have a special public field named value__
                     .Where(fi => fi.DeclaringType != null && !fi.DeclaringType.IsEnum);
+
+                _recursiveMethods = new List<MethodInfo>();
+                FindRecursiveMembers();
             } catch (ArgumentException argumentException) {
                 Debug.WriteLine(argumentException.ToString());
             } catch (IOException ioException) {
@@ -33,22 +40,23 @@ namespace Pennyworth {
             }
         }
 
-        public IEnumerable<OffendingMember> GetPublicFields() {
-            return _publicFields.Select(fi => new OffendingMember {
-                Name          = fi.Name,
-                MemberType    = fi.MemberType.ToString(),
-                DeclaringType = fi.DeclaringType.ToString(),
-                Path          = _assembly.Location,
-            }).ToList();
+        public IEnumerable<FaultInfo> GetPublicFields() {
+            return _publicFields.ToOffendingMembers(_path);
         }
 
         public Boolean HasPublicFields() {
             return _publicFields != null && _publicFields.Any();
         }
 
-        public IEnumerable<OffendingMember> GetRecursiveMembers() {
-            if (_assembly == null) return Enumerable.Empty<OffendingMember>();
+        public IEnumerable<FaultInfo> GetRecursiveMembers() {
+            return _recursiveMethods.ToOffendingMembers(_path);
+        }
 
+        public Boolean HasRecursiveMembers() {
+            return _recursiveMethods != null && _recursiveMethods.Any();
+        }
+
+        private void FindRecursiveMembers() {
             var methodByteCodeMap = _assembly.GetTypes()
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance
                                               | BindingFlags.NonPublic
@@ -58,7 +66,6 @@ namespace Pennyworth {
                 .Where(mi => mi.GetMethodBody() != null)
                 .ToDictionary(mi => mi,
                               mi => mi.GetMethodBody().GetILAsByteArray());
-            var recursiveMethods = new List<MethodInfo>();
 
             foreach (var kvp in methodByteCodeMap) {
                 var offset = 0;
@@ -107,7 +114,7 @@ namespace Pennyworth {
                                     var operand       = BitConverter.ToInt32(byteCodes, offset + instruction.Size);
                                     var callingMethod = kvp.Key.GetBaseDefinition();
 
-                                    if (IsRecursiveCall(callingMethod, operand)) recursiveMethods.Add(kvp.Key);// yield return kvp.Key;
+                                    if (IsRecursiveCall(callingMethod, operand)) _recursiveMethods.Add(kvp.Key);
                                 }
 
                                 break;
@@ -119,13 +126,6 @@ namespace Pennyworth {
                     }
                 }
             }
-
-            return recursiveMethods.Select(mi => new OffendingMember {
-                Name          = mi.Name,
-                MemberType    = mi.MemberType.ToString(),
-                DeclaringType = mi.DeclaringType.ToString(),
-                Path          = _assembly.Location
-            }).ToList();
         }
 
         private static Boolean IsRecursiveCall(MethodInfo callingMethod, Int32 operand) {
@@ -145,6 +145,17 @@ namespace Pennyworth {
             }
 
             return false;
+        }
+    }
+
+    internal static class Extensions {
+        internal static IEnumerable<FaultInfo> ToOffendingMembers(this IEnumerable<MemberInfo> memberInfos, String location) {
+            return memberInfos.Select(mi => new FaultInfo {
+                Name          = mi.Name,
+                MemberType    = mi.MemberType.ToString(),
+                DeclaringType = mi.DeclaringType.ToString(),
+                Path          = location
+            }).ToList();
         }
     }
 }

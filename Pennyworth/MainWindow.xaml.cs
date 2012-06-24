@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media.Imaging;
-
 using NLog;
 
 namespace Pennyworth {
@@ -32,7 +31,8 @@ namespace Pennyworth {
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
-            offendingMembers.Items.Clear();
+            imageResult.Source = null;
+            offendingMembers.ItemsSource = null;
 
             if (e.Data.GetDataPresent("FileDrop")) {
                 var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
@@ -43,8 +43,8 @@ namespace Pennyworth {
                     using (var helper = new AssemblyTestRunner()) {
                         var testsRan = helper.RunTestsFor(assemblies);
 
-                        imageResult.Source = testsRan && !helper.Offences.Any() ? _yayImage : _nayImage;
-                        offendingMembers.ItemsSource = helper.Offences;
+                        imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
+                        offendingMembers.ItemsSource = helper.Faults;
                     }
                 } else {
                     _logger.Info("No assemblies found among dropped files.");
