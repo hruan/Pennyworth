@@ -39,9 +39,10 @@ namespace Pennyworth {
 
         public IEnumerable<OffendingMember> GetPublicFields() {
             return _publicFields.Select(fi => new OffendingMember {
-                Path = _assembly.Location,
-                Name = fi.Name,
-                DeclaringType = fi.DeclaringType.ToString()
+                Name          = fi.Name,
+                MemberType    = fi.MemberType.ToString(),
+                DeclaringType = fi.DeclaringType.ToString(),
+                Path          = _assembly.Location,
             }).ToList();
         }
 
@@ -123,9 +124,10 @@ namespace Pennyworth {
             }
 
             return recursiveMethods.Select(mi => new OffendingMember {
-                Name = mi.Name,
+                Name          = mi.Name,
+                MemberType    = mi.MemberType.ToString(),
                 DeclaringType = mi.DeclaringType.ToString(),
-                Path = mi.ReflectedType.Assembly.Location
+                Path          = _assembly.Location
             }).ToList();
         }
 
@@ -143,26 +145,6 @@ namespace Pennyworth {
 
                 return calledMethod != null
                        && callingMethod == calledMethod;
-                /* if (calledMethod != null
-                    && calledMethod.ReflectedType.AssemblyQualifiedName == callingMethod.ReflectedType.AssemblyQualifiedName) {
-                    Func<MethodBase, MethodInfo> getMethod =
-                        mi => mi.ReflectedType.GetMethod(mi.Name,
-                                                         BindingFlags.Instance
-                                                         | BindingFlags.Static
-                                                         | BindingFlags.Public
-                                                         | BindingFlags.NonPublic
-                                                         | BindingFlags.DeclaredOnly,
-                                                         null,
-                                                         mi.GetParameters()
-                                                             .Select(pi => pi.ParameterType)
-                                                             .ToArray(),
-                                                         null);
-
-                    var calling = getMethod(callingMethod);
-                    var called  = getMethod(calledMethod);
-                    return (!(calling == null || called == null)
-                            && calling == called);
-                } */
             }
 
             return false;

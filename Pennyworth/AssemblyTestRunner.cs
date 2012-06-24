@@ -53,4 +53,12 @@ namespace Pennyworth {
             }
         }
     }
+
+    [Serializable]
+    public struct OffendingMember {
+        public String MemberType { get; set; }
+        public String Path { get; set; }
+        public String Name { get; set; }
+        public String DeclaringType { get; set; }
+    }
 }
