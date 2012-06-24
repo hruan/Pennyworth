@@ -32,18 +32,25 @@ namespace Pennyworth {
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
+            offendingMembers.Items.Clear();
+
             if (e.Data.GetDataPresent("FileDrop")) {
                 var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
                     .Select(p => new FileInfo(p));
+                var assemblies = DropHelper.GetAssembliesFromDropData(paths);
 
-                using (var helper = new AssemblyTestRunner()) {
-                    helper.RunTestsFor(DropHelper.GetAssembliesFromDropData(paths));
+                if (assemblies.Any()) {
+                    using (var helper = new AssemblyTestRunner()) {
+                        var testsRan = helper.RunTestsFor(assemblies);
 
-                    imageResult.Source = helper.Offences.Any() ? _nayImage : _yayImage;
-                    offendingMembers.ItemsSource = helper.Offences;
+                        imageResult.Source = testsRan && !helper.Offences.Any() ? _yayImage : _nayImage;
+                        offendingMembers.ItemsSource = helper.Offences;
+                    }
+                } else {
+                    _logger.Info("No assemblies found among dropped files.");
                 }
             } else {
-                _logger.Info("No assemblies found among dropped data.");
+                _logger.Info("No files found among dropped items.");
             }
 
             log.Items.Refresh();

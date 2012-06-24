@@ -22,7 +22,11 @@ namespace Pennyworth {
                                                          .FirstOrDefault(path => !path.Contains("vshost")))
                 .Where(dir => !String.IsNullOrEmpty(dir));
 
-            return files.Select(fi => fi.FullName).Concat(firstAssemblies);
+            return files.Select(fi => fi.FullName)
+                .Concat(firstAssemblies)
+                .Where(path => Path.HasExtension(path)
+                               && (path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                                   || path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)));
         }
     }
 }

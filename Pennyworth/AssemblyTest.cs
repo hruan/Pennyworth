@@ -30,8 +30,6 @@ namespace Pennyworth {
                 Debug.WriteLine(argumentException.ToString());
             } catch (IOException ioException) {
                 Debug.WriteLine(ioException.ToString());
-            } catch (BadImageFormatException badImage) {
-                Debug.WriteLine(badImage.ToString());
             }
         }
 
@@ -49,6 +47,8 @@ namespace Pennyworth {
         }
 
         public IEnumerable<OffendingMember> GetRecursiveMembers() {
+            if (_assembly == null) return Enumerable.Empty<OffendingMember>();
+
             var methodByteCodeMap = _assembly.GetTypes()
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance
                                               | BindingFlags.NonPublic

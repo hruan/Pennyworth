@@ -19,7 +19,7 @@ namespace Pennyworth {
 
         public List<OffendingMember> Offences { get; private set; }
 
-        public void RunTestsFor(IEnumerable<String> paths) {
+        public Boolean RunTestsFor(IEnumerable<String> paths) {
             Debug.Assert(paths != null);
 
             const String cacheDirName = "Cache";
@@ -32,15 +32,22 @@ namespace Pennyworth {
                 ShadowCopyFiles      = "true"
             });
 
-            _logger.Trace("Created worker AppDomain.");
-            foreach (var path in paths) RunTestsFor(path);
+            _logger.Debug("Created worker AppDomain.");
+            if (paths.Any(path => !RunTestsFor(path))) {
+                _logger.Warn("Halting tests.");
+                return false;
+            }
+
+            return true;
         }
 
-        private void RunTestsFor(String path) {
+        private Boolean RunTestsFor(String path) {
             Debug.Assert(path != null);
 
-            _logger.Debug("Testing {0}", path);
-            var tester = (AssemblyTest) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
+            _logger.Info("Testing {0}", path);
+            AssemblyTest tester = null;
+            try {
+                tester = (AssemblyTest) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
                                                                                typeof(AssemblyTest).FullName,
                                                                                ignoreCase:  false,
                                                                                bindingAttr: BindingFlags.Default,
@@ -48,22 +55,30 @@ namespace Pennyworth {
                                                                                args:        new[] {path},
                                                                                culture:     null,
                                                                                activationAttributes: null);
-            if (tester.HasPublicFields()) {
-                _logger.Debug("{0} has public fields!", path);
-                Offences.AddRange(tester.GetPublicFields());
+            } catch (TargetInvocationException ex) {
+                _logger.Error("Couldn't instantiate tester: {0}", ex.InnerException.Message);
             }
 
-            if (tester.GetRecursiveMembers().Any()) {
-                _logger.Debug("{0} has recursive members!", path);
-                Offences.AddRange(tester.GetRecursiveMembers());
+            if (tester != null) {
+                if (tester.HasPublicFields()) {
+                    _logger.Info("{0} has public fields!", path);
+                    Offences.AddRange(tester.GetPublicFields());
+                }
+
+                if (tester.GetRecursiveMembers().Any()) {
+                    _logger.Info("{0} has recursive members!", path);
+                    Offences.AddRange(tester.GetRecursiveMembers());
+                }
             }
+
+            return tester != null;
         }
 
         public void Dispose() {
             if (!_hasBeenUnloaded) {
                 AppDomain.Unload(_appDomain);
                 _hasBeenUnloaded = true;
-                _logger.Trace("Worker domain unloaded.");
+                _logger.Debug("Worker domain unloaded.");
             }
         }
     }
