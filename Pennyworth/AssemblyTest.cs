@@ -27,6 +27,7 @@ namespace Pennyworth {
                 _assembly = Assembly.LoadFrom(path);
 
                 _publicFields = _assembly.GetTypes()
+                    .Where(t => !t.IsNested)
                     .SelectMany(t => t.GetFields(BindingFlags.Instance | BindingFlags.Public))
                     // Apparently, enums have a special public field named value__
                     .Where(fi => fi.DeclaringType != null && !fi.DeclaringType.IsEnum);
