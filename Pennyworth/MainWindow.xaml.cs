@@ -54,6 +54,10 @@ namespace Pennyworth {
             }
 
             log.Items.Refresh();
+            if (log.HasItems) {
+                var last = log.Items.Count - 1;
+                log.ScrollIntoView(log.Items[last]);
+            }
         }
     }
 }
