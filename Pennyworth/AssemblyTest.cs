@@ -21,19 +21,21 @@ namespace Pennyworth {
                 .ToDictionary(opcode => opcode.Value);
         }
 
-        public AssemblyTest(String path) {
+        public AssemblyTest(String path, SessionRegistry<Guid, String> registry) {
             try {
                 _path     = path;
                 _assembly = Assembly.LoadFrom(path);
 
-                _publicFields = _assembly.GetTypes()
-                    .Where(t => !t.IsNested)
-                    .SelectMany(t => t.GetFields(BindingFlags.Instance | BindingFlags.Public))
-                    // Apparently, enums have a special public field named value__
-                    .Where(fi => fi.DeclaringType != null && !fi.DeclaringType.IsEnum);
+                if (registry != null && !registry.Register(CurrentAssemblyGuid, path)) {
+                    _publicFields = _assembly.GetTypes()
+                        .Where(t => !t.IsNested)
+                        .SelectMany(t => t.GetFields(BindingFlags.Instance | BindingFlags.Public))
+                        // Apparently, enums have a special public field named value__
+                        .Where(fi => fi.DeclaringType != null && !fi.DeclaringType.IsEnum);
 
-                _recursiveMethods = new List<MethodInfo>();
-                FindRecursiveMembers();
+                    _recursiveMethods = new List<MethodInfo>();
+                    FindRecursiveMembers();
+                }
             } catch (ArgumentException argumentException) {
                 Debug.WriteLine(argumentException.ToString());
             } catch (IOException ioException) {
@@ -55,6 +57,10 @@ namespace Pennyworth {
 
         public Boolean HasRecursiveMembers() {
             return _recursiveMethods != null && _recursiveMethods.Any();
+        }
+
+        private Guid CurrentAssemblyGuid {
+            get { return _assembly.ManifestModule.ModuleVersionId; }
         }
 
         private void FindRecursiveMembers() {
@@ -138,7 +144,7 @@ namespace Pennyworth {
                                                                       callingMethod.GetGenericArguments());
                 } catch (ArgumentException ex) {
                     // Out of scope
-                    Debug.Print("Couldn't resolve method call in {0}: {1}", callingMethod.Name, ex.Message);
+                    // Debug.Print("Couldn't resolve method call in {0}: {1}", callingMethod.Name, ex.Message);
                 }
 
                 return calledMethod != null

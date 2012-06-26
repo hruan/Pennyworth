@@ -16,26 +16,13 @@ namespace Pennyworth {
                 dirs.SelectMany(dir => Directory.EnumerateFiles(dir.FullName, "*.exe", SearchOption.AllDirectories)
                                                 .Where(path => !path.Contains("vshost")));
 
-            // return files.Select(fi => fi.FullName).Concat(DiscardSimilarFiles(assembliesInDirs.ToList()));
             return files.Select(fi => fi.FullName).Concat(assembliesInDirs);
         }
 
-        // TODO: Reliable way of determine whether it's the same assembly?
-        // TODO: Resolve issues with selection in ListView; caused by sorting?
-        private static IEnumerable<String> DiscardSimilarFiles(List<String> assemblies) {
-            var fileNames      = assemblies.Select(Path.GetFileName).Distinct();
-            var namePathLookup = assemblies.ToLookup(Path.GetFileName);
+        public static String GetBaseDir(IEnumerable<FileInfo> data) {
+            if (data == null || !data.Any()) return String.Empty;
 
-            foreach (var file in fileNames) {
-                var paths = namePathLookup[file].ToList();
-                if (paths.Count > 1) {
-                    paths.Sort(String.CompareOrdinal);
-
-                    yield return paths.First();
-                }
-
-                yield return paths.First();
-            }
+            return data.First().FullName;
         }
     }
 }

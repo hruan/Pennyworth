@@ -36,12 +36,14 @@ namespace Pennyworth {
 
             if (e.Data.GetDataPresent("FileDrop")) {
                 var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
-                    .Select(p => new FileInfo(p));
+                    .Select(p => new FileInfo(p))
+                    .ToList();
                 var assemblies = DropHelper.GetAssembliesFromDropData(paths);
+                var basePath = DropHelper.GetBaseDir(paths);
 
                 if (assemblies.Any()) {
-                    using (var helper = new AssemblyTestRunner()) {
-                        var testsRan = helper.RunTestsFor(assemblies);
+                    using (var helper = new AssemblyTestManager()) {
+                        var testsRan = helper.RunTestsFor(basePath, assemblies);
 
                         imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
                         offendingMembers.ItemsSource = helper.Faults;

@@ -57,7 +57,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="DropHelper.cs" />
-    <Compile Include="AssemblyTestRunner.cs" />
+    <Compile Include="AssemblyTestManager.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

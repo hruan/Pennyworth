@@ -4,41 +4,76 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using NLog;
 
 namespace Pennyworth {
-    public sealed class AssemblyTestRunner : IDisposable {
+    public sealed class AssemblyTestManager : IDisposable {
         private AppDomain _appDomain;
         private Boolean _hasBeenUnloaded;
+        private readonly SessionRegistry<Guid, String> _sessionRegistry;
         private readonly Logger _logger;
 
-        public AssemblyTestRunner() {
+        public AssemblyTestManager() {
             Faults = new List<FaultInfo>();
             _logger = LogManager.GetLogger(GetType().Name);
+            _sessionRegistry = new SessionRegistry<Guid, String>();
         }
 
         public List<FaultInfo> Faults { get; private set; }
 
-        public Boolean RunTestsFor(IEnumerable<String> paths) {
-            Debug.Assert(paths != null);
+        public Boolean RunTestsFor(String basePath, IEnumerable<String> paths) {
+            Debug.Assert(!String.IsNullOrEmpty(basePath) && paths != null);
 
             const String cacheDirName = "Cache";
             var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
                                + Path.DirectorySeparatorChar + cacheDirName;
 
-            _appDomain = AppDomain.CreateDomain("worker", null, new AppDomainSetup {
+            _appDomain = AppDomain.CreateDomain(Path.GetDirectoryName(basePath), null, new AppDomainSetup {
                 CachePath            = cacheDirPath,
                 DisallowCodeDownload = true,
                 ShadowCopyFiles      = "true"
             });
 
             _logger.Debug("Created worker AppDomain.");
+
             if (paths.Any(path => !RunTestsFor(path))) {
-                _logger.Warn("Halting tests.");
+                _logger.Error("Halting tests.");
                 return false;
             }
 
+            var dups = _sessionRegistry.Duplicates();
+            if (dups.Any()) {
+                _logger.Warn("There were some duplicate assemblies found.  Only the first one was tested.");
+
+                var sb = new StringBuilder();
+                var @base = new Uri(basePath);
+                foreach (var dup in dups) {
+                    sb.Clear();
+                    for (var i = 0; i < dup.Count; i++) {
+                        sb.AppendFormat("{{{0}}} ", i);
+                    }
+
+                    sb.Append("are duplicates");
+                    _logger.Warn(sb.ToString(),
+                                 dup.Select(d => @base.MakeRelativeUri(new Uri(d))
+                                                      .ToString()
+                                                      .Replace(Path.AltDirectorySeparatorChar,
+                                                               Path.DirectorySeparatorChar))
+                                    .Cast<Object>()
+                                    .ToArray());
+                }
+            }
+
             return true;
+        }
+
+        public void Dispose() {
+            if (!_hasBeenUnloaded) {
+                AppDomain.Unload(_appDomain);
+                _hasBeenUnloaded = true;
+                _logger.Debug("Worker domain unloaded.");
+            }
         }
 
         private Boolean RunTestsFor(String path) {
@@ -52,7 +87,7 @@ namespace Pennyworth {
                                                                                ignoreCase:  false,
                                                                                bindingAttr: BindingFlags.Default,
                                                                                binder:      null,
-                                                                               args:        new[] {path},
+                                                                               args:        new Object[] { path, _sessionRegistry },
                                                                                culture:     null,
                                                                                activationAttributes: null);
             } catch (TargetInvocationException ex) {
@@ -73,13 +108,29 @@ namespace Pennyworth {
 
             return tester != null;
         }
+    }
 
-        public void Dispose() {
-            if (!_hasBeenUnloaded) {
-                AppDomain.Unload(_appDomain);
-                _hasBeenUnloaded = true;
-                _logger.Debug("Worker domain unloaded.");
+    public sealed class SessionRegistry<TKey, TElem> : MarshalByRefObject {
+        private readonly Dictionary<TKey, List<TElem>> _registry;
+
+        public SessionRegistry() {
+            _registry = new Dictionary<TKey, List<TElem>>();
+        }
+
+        public Boolean Register(TKey key, TElem elem) {
+            if (_registry.ContainsKey(key)) {
+                _registry[key].Add(elem);
+                return false;
             }
+            
+            _registry[key] = new List<TElem> { elem };
+            return true;
+        }
+
+        public IList<List<TElem>> Duplicates() {
+            return _registry.Where(kvp => kvp.Value.Count > 1)
+                .Select(kvp => kvp.Value)
+                .ToList();
         }
     }
 
