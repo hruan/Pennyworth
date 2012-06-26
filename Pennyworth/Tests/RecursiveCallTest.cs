@@ -70,7 +70,11 @@ namespace Pennyworth.Tests {
                                 break;
 
                             case OperandType.InlineSwitch:
-                                operandSize = BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4;
+                                try {
+                                    operandSize = checked(BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4);
+                                } catch (OverflowException ex) {
+                                    operandSize = 0;
+                                }
                                 break;
 
                             case OperandType.InlineMethod:
