@@ -59,12 +59,11 @@ namespace Pennyworth.Tests {
 
                     sb.Append("are duplicates");
                     _logger.Warn(sb.ToString(),
-                                 dup.Select(d => @base.MakeRelativeUri(new Uri(d))
-                                                      .ToString()
-                                                      .Replace(Path.AltDirectorySeparatorChar,
-                                                               Path.DirectorySeparatorChar))
-                                    .Cast<Object>()
-                                    .ToArray());
+                                 dup.Select(d => Uri.UnescapeDataString(@base.MakeRelativeUri(new Uri(d)).ToString())
+                                                     .Replace(Path.AltDirectorySeparatorChar,
+                                                              Path.DirectorySeparatorChar))
+                                     .Cast<Object>()
+                                     .ToArray());
                 }
             }
 
