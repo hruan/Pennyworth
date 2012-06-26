@@ -12,7 +12,7 @@
             <ColumnDefinition />
         </Grid.ColumnDefinitions>
         <Image Height="170" HorizontalAlignment="Stretch" Name="imageResult" Stretch="Fill" VerticalAlignment="Top" Width="170" Margin="0,20,0,0" />
-        <GroupBox Header="Offending members" Grid.Column="1">
+        <GroupBox Header="Faults" Grid.Column="1">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition />

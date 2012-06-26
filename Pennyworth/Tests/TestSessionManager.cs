@@ -7,17 +7,17 @@ using System.Reflection;
 using System.Text;
 using NLog;
 
-namespace Pennyworth {
-    public sealed class AssemblyTestManager : IDisposable {
+namespace Pennyworth.Tests {
+    public sealed class TestSessionManager : IDisposable {
         private AppDomain _appDomain;
         private Boolean _hasBeenUnloaded;
-        private readonly SessionRegistry<Guid, String> _sessionRegistry;
+        private readonly AssemblyRegistry<Guid, String> _assemblyRegistry;
         private readonly Logger _logger;
 
-        public AssemblyTestManager() {
+        public TestSessionManager() {
             Faults = new List<FaultInfo>();
             _logger = LogManager.GetLogger(GetType().Name);
-            _sessionRegistry = new SessionRegistry<Guid, String>();
+            _assemblyRegistry = new AssemblyRegistry<Guid, String>();
         }
 
         public List<FaultInfo> Faults { get; private set; }
@@ -29,11 +29,13 @@ namespace Pennyworth {
             var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
                                + Path.DirectorySeparatorChar + cacheDirName;
 
-            _appDomain = AppDomain.CreateDomain(Path.GetDirectoryName(basePath), null, new AppDomainSetup {
-                CachePath            = cacheDirPath,
-                DisallowCodeDownload = true,
-                ShadowCopyFiles      = "true"
-            });
+            _appDomain = AppDomain.CreateDomain(Path.GetDirectoryName(basePath) ?? "worker",
+                                                null,
+                                                new AppDomainSetup {
+                                                    CachePath = cacheDirPath,
+                                                    DisallowCodeDownload = true,
+                                                    ShadowCopyFiles = "true"
+                                                });
 
             _logger.Debug("Created worker AppDomain.");
 
@@ -42,7 +44,7 @@ namespace Pennyworth {
                 return false;
             }
 
-            var dups = _sessionRegistry.Duplicates();
+            var dups = _assemblyRegistry.Duplicates();
             if (dups.Any()) {
                 _logger.Warn("There were some duplicate assemblies found.  Only the first one was tested.");
 
@@ -80,40 +82,33 @@ namespace Pennyworth {
             Debug.Assert(path != null);
 
             _logger.Info("Testing {0}", path);
-            AssemblyTest tester = null;
+            TestSession session = null;
             try {
-                tester = (AssemblyTest) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
-                                                                               typeof(AssemblyTest).FullName,
+                session = (TestSession) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
+                                                                               typeof(TestSession).FullName,
                                                                                ignoreCase:  false,
                                                                                bindingAttr: BindingFlags.Default,
                                                                                binder:      null,
-                                                                               args:        new Object[] { path, _sessionRegistry },
+                                                                               args:        new Object[] { path, _assemblyRegistry },
                                                                                culture:     null,
                                                                                activationAttributes: null);
             } catch (TargetInvocationException ex) {
                 _logger.Error("Couldn't instantiate tester: {0}", ex.InnerException.Message);
             }
 
-            if (tester != null) {
-                if (tester.HasPublicFields()) {
-                    _logger.Info("{0} has public fields!", path);
-                    Faults.AddRange(tester.GetPublicFields());
-                }
-
-                if (tester.HasRecursiveMembers()) {
-                    _logger.Info("{0} has recursive members!", path);
-                    Faults.AddRange(tester.GetRecursiveMembers());
-                }
+            if (session != null) {
+                session.RunTests();
+                if (session.HasFaults()) Faults.AddRange(session.GetFaults());
             }
 
-            return tester != null;
+            return session != null;
         }
     }
 
-    public sealed class SessionRegistry<TKey, TElem> : MarshalByRefObject {
+    public sealed class AssemblyRegistry<TKey, TElem> : MarshalByRefObject {
         private readonly Dictionary<TKey, List<TElem>> _registry;
 
-        public SessionRegistry() {
+        public AssemblyRegistry() {
             _registry = new Dictionary<TKey, List<TElem>>();
         }
 

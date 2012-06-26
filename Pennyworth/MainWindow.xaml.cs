@@ -5,12 +5,9 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using NLog;
+using Pennyworth.Tests;
 
 namespace Pennyworth {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// Icons from: http://www.iconfinder.com/browse/iconset/30_Free_Black_ToolBar_Icons/#readme
-    /// </summary>
     public partial class MainWindow {
         private readonly BitmapImage _yayImage;
         private readonly BitmapImage _nayImage;
@@ -26,6 +23,7 @@ namespace Pennyworth {
                 log.ItemsSource = target.Logs;
             }
 
+            // Icons from: http://www.iconfinder.com/browse/iconset/30_Free_Black_ToolBar_Icons/#readme
             _yayImage = new BitmapImage(new Uri("/Images/Yay.png", UriKind.Relative));
             _nayImage = new BitmapImage(new Uri("/Images/Nay.png", UriKind.Relative));
         }
@@ -38,11 +36,11 @@ namespace Pennyworth {
                 var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
                     .Select(p => new FileInfo(p))
                     .ToList();
-                var assemblies = DropHelper.GetAssembliesFromDropData(paths);
+                var assemblies = DropHelper.GetAssembliesFromDropData(paths).ToList();
                 var basePath = DropHelper.GetBaseDir(paths);
 
                 if (assemblies.Any()) {
-                    using (var helper = new AssemblyTestManager()) {
+                    using (var helper = new TestSessionManager()) {
                         var testsRan = helper.RunTestsFor(basePath, assemblies);
 
                         imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
