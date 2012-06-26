@@ -11,16 +11,17 @@ namespace Pennyworth.Tests {
     public sealed class TestSessionManager : IDisposable {
         private AppDomain _appDomain;
         private Boolean _hasBeenUnloaded;
+        private readonly List<FaultInfo> _faults;
         private readonly AssemblyRegistry<Guid, String> _assemblyRegistry;
         private readonly Logger _logger;
 
         public TestSessionManager() {
-            Faults = new List<FaultInfo>();
+            _faults = new List<FaultInfo>();
             _logger = LogManager.GetLogger(GetType().Name);
             _assemblyRegistry = new AssemblyRegistry<Guid, String>();
         }
 
-        public List<FaultInfo> Faults { get; private set; }
+        public List<FaultInfo> Faults { get { return _faults; } }
 
         public Boolean RunTestsFor(String basePath, IEnumerable<String> paths) {
             Debug.Assert(!String.IsNullOrEmpty(basePath) && paths != null);
