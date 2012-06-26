@@ -13,10 +13,13 @@ namespace Pennyworth {
             var dirs  = data.Where(isDir);
 
             var assembliesInDirs =
-                dirs.SelectMany(dir => Directory.EnumerateFiles(dir.FullName, "*.exe", SearchOption.AllDirectories)
-                                                .Where(path => !path.Contains("vshost")));
+                dirs.SelectMany(dir => Directory.EnumerateFiles(dir.FullName, "*", SearchOption.AllDirectories));
 
-            return files.Select(fi => fi.FullName).Concat(assembliesInDirs);
+            return files.Select(fi => fi.FullName)
+                .Concat(assembliesInDirs)
+                .Where(path => (path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                                || path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                               && !path.Contains("vshost"));
         }
 
         public static String GetBaseDir(IEnumerable<FileInfo> data) {
