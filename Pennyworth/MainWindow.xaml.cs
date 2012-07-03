@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using NLog;
@@ -26,6 +27,8 @@ namespace Pennyworth {
             // Icons from: http://www.iconfinder.com/browse/iconset/30_Free_Black_ToolBar_Icons/#readme
             _yayImage = new BitmapImage(new Uri("/Images/Yay.png", UriKind.Relative));
             _nayImage = new BitmapImage(new Uri("/Images/Nay.png", UriKind.Relative));
+
+            versionLabel.Content = "Version: " + Assembly.GetExecutingAssembly().GetName().Version;
         }
 
         private void Window_Drop(object sender, DragEventArgs e) {
