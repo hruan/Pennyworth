@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace Pennyworth.Tests {
+namespace TestLibrary.Tests {
     [Test]
     public sealed class PublicFieldTest : AbstractTest {
         public PublicFieldTest(Assembly assembly, String path)

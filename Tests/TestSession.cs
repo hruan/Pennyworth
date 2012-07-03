@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace Pennyworth.Tests {
+namespace TestLibrary {
     public sealed class TestSession : MarshalByRefObject {
         private readonly Assembly _assembly;
         private readonly String _path;

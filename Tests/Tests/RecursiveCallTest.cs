@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace Pennyworth.Tests {
+namespace TestLibrary.Tests {
     [Test]
     public sealed class RecursiveCallTest : AbstractTest {
         private readonly Dictionary<MethodInfo, Byte[]> _methodByteCode;

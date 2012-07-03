@@ -62,9 +62,6 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="DropHelper.cs" />
-    <Compile Include="Tests\TestSessionManager.cs" />
-    <Compile Include="Tests\PublicFieldTest.cs" />
-    <Compile Include="Tests\RecursiveCallTest.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -73,8 +70,6 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Tests\TestSession.cs" />
-    <Compile Include="Tests\AbstractTest.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -116,7 +111,12 @@
     <Resource Include="Images\Nay.png" />
     <Resource Include="Images\Yay.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\Tests\Tests.csproj">
+      <Project>{A872DFFF-0A98-47E9-9B6E-F09A774A3E4E}</Project>
+      <Name>Tests</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

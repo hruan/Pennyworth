@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using NLog;
 
-namespace Pennyworth.Tests {
+namespace TestLibrary {
     public sealed class TestSessionManager : IDisposable {
         private AppDomain _appDomain;
         private Boolean _hasBeenUnloaded;

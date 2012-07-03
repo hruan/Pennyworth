@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Pennyworth.Tests {
+namespace TestLibrary {
     public abstract class AbstractTest {
         protected readonly Assembly _assembly;
         protected readonly List<MemberInfo> _faultyMembers;
