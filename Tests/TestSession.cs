@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 
-namespace TestLibrary {
+namespace Tests {
     public sealed class TestSession : MarshalByRefObject {
         private readonly Assembly _assembly;
         private readonly String _path;
@@ -68,7 +68,7 @@ namespace TestLibrary {
                 .Where(t => t.IsClass
                             && !t.IsAbstract
                             && baseType.IsAssignableFrom(t)
-                            && Attribute.GetCustomAttribute(t, typeof(TestAttribute), false) != null);
+                            && Attribute.GetCustomAttribute(t, typeof(TestCaseAttribute), false) != null);
         }
     }
 }

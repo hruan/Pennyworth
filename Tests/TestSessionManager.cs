@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using NLog;
 
-namespace TestLibrary {
+namespace Tests {
     public sealed class TestSessionManager : IDisposable {
         private AppDomain _appDomain;
         private Boolean _hasBeenUnloaded;
@@ -131,6 +131,7 @@ namespace TestLibrary {
 
     [Serializable]
     public struct FaultInfo {
+        public String FaultType { get; set; }
         public String MemberType { get; set; }
         public String Path { get; set; }
         public String Name { get; set; }

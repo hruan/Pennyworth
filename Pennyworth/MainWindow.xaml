@@ -26,6 +26,7 @@
                 <ListView HorizontalAlignment="Stretch" Name="offendingMembers" VerticalAlignment="Stretch">
                     <ListView.View>
                         <GridView>
+                            <GridViewColumn Header="Fault type" DisplayMemberBinding="{Binding Path=FaultType}"/>
                             <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Path=Name}"/>
                             <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Path=MemberType}"/>
                             <GridViewColumn Header="Declared in" DisplayMemberBinding="{Binding Path=DeclaringType}" />

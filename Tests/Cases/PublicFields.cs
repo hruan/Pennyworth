@@ -2,10 +2,10 @@
 using System.Linq;
 using System.Reflection;
 
-namespace TestLibrary.Tests {
-    [Test]
-    public sealed class PublicFieldTest : AbstractTest {
-        public PublicFieldTest(Assembly assembly, String path)
+namespace Tests.Cases {
+    [TestCase("Public field")]
+    public sealed class PublicFields : AbstractTest {
+        public PublicFields(Assembly assembly, String path)
             : base(assembly, path) {}
 
         public override void Run() {

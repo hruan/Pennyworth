@@ -4,15 +4,25 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace TestLibrary.Tests {
-    [Test]
-    public sealed class RecursiveCallTest : AbstractTest {
+namespace Tests {
+    internal sealed class MethodCallHelper {
+        private readonly Assembly _assembly;
         private readonly Dictionary<MethodInfo, Byte[]> _methodByteCode;
+        private readonly List<Tuple<MethodInfo, MethodInfo>> _calls;
+        private readonly ILookup<MethodInfo, MethodInfo> _callsLookup;
+
         private static readonly Dictionary<Int16, OpCode> _opcodes;
 
-        public RecursiveCallTest(Assembly assembly, String path)
-            : base(assembly, path) {
-            _methodByteCode = _assembly.GetTypes()
+        static MethodCallHelper() {
+            _opcodes = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Select(fieldInfo => fieldInfo.GetValue(null))
+                .Cast<OpCode>()
+                .ToDictionary(opcode => opcode.Value);
+        }
+
+        internal MethodCallHelper(Assembly assembly) {
+            _assembly = assembly;
+            _methodByteCode = assembly.GetTypes()
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance
                                               | BindingFlags.NonPublic
                                               | BindingFlags.Public
@@ -21,16 +31,26 @@ namespace TestLibrary.Tests {
                 .Where(mi => mi.GetMethodBody() != null)
                 .ToDictionary(mi => mi,
                               mi => mi.GetMethodBody().GetILAsByteArray());
+
+            _calls = new List<Tuple<MethodInfo, MethodInfo>>(_methodByteCode.Count);
+            FindCalls();
+
+            _callsLookup = _calls.ToLookup(x => x.Item1, x => x.Item2);
         }
 
-        static RecursiveCallTest() {
-            _opcodes = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
-                .Select(fieldInfo => fieldInfo.GetValue(null))
-                .Cast<OpCode>()
-                .ToDictionary(opcode => opcode.Value);
+        internal IEnumerable<MemberInfo> GetRecursiveCalls() {
+            return _calls.AsParallel()
+                .Where(x => x.Item1 == x.Item2)
+                .Select(x => x.Item1);
         }
 
-        public override void Run() {
+        internal IEnumerable<MethodInfo> GetIndirectRecursiveCalls() {
+            return _calls.AsParallel()
+                .Where(pair => _callsLookup[pair.Item2].Any(x => x != pair.Item2 && x == pair.Item1))
+                .Select(x => x.Item1);
+        }
+
+        private void FindCalls() {
             foreach (var kvp in _methodByteCode) {
                 var offset = 0;
                 var byteCodes = kvp.Value;
@@ -72,7 +92,7 @@ namespace TestLibrary.Tests {
                             case OperandType.InlineSwitch:
                                 try {
                                     operandSize = checked(BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4);
-                                } catch (OverflowException ex) {
+                                } catch (OverflowException) {
                                     operandSize = 0;
                                 }
                                 break;
@@ -82,7 +102,10 @@ namespace TestLibrary.Tests {
                                     var operand       = BitConverter.ToInt32(byteCodes, offset + instruction.Size);
                                     var callingMethod = kvp.Key.GetBaseDefinition();
 
-                                    if (IsRecursiveCall(callingMethod, operand)) _faultyMembers.Add(kvp.Key);
+                                    var resolved = ResolveMethod(callingMethod, operand);
+                                    if (resolved != null) {
+                                        _calls.Add(Tuple.Create(kvp.Key, resolved));
+                                    }
                                 }
 
                                 break;
@@ -96,23 +119,22 @@ namespace TestLibrary.Tests {
             }
         }
 
-        private static Boolean IsRecursiveCall(MethodInfo callingMethod, Int32 operand) {
-            if (callingMethod.DeclaringType != null) {
-                MethodBase calledMethod = null;
+        private MethodInfo ResolveMethod(MethodInfo callingMethod, Int32 operand) {
+            MethodBase called = null;
+
+            foreach (var module in _assembly.GetModules()) {
                 try {
-                    calledMethod = callingMethod.Module.ResolveMethod(operand,
-                                                                      callingMethod.DeclaringType.GetGenericArguments(),
-                                                                      callingMethod.GetGenericArguments());
-                } catch (ArgumentException ex) {
+                    called = module.ResolveMethod(operand,
+                                                   callingMethod.DeclaringType.GetGenericArguments(),
+                                                   callingMethod.GetGenericArguments());
+                } catch (ArgumentException) {
                     // Out of scope
-                    // Debug.Print("Couldn't resolve method call in {0}: {1}", callingMethod.Name, ex.Message);
                 }
 
-                return calledMethod != null
-                       && callingMethod == calledMethod;
+                if (called != null) break;
             }
 
-            return false;
+            return called as MethodInfo;
         }
     }
 }

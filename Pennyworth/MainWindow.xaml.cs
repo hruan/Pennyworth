@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using NLog;
-using TestLibrary;
+using Tests;
 
 namespace Pennyworth {
     public partial class MainWindow {
