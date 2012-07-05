@@ -65,7 +65,7 @@ namespace Tests {
                     // Multibyte opcode?
                     // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
                     // Partition III, Table 1
-                    if ((opcode & 0xfe) == 0) {
+                    if (opcode != OpCodes.Nop.Value && (opcode & 0xfe) == 0) {
                         opcode = (Int16) (opcode << 8 | byteCodes[offset + 1]);
                     }
 
@@ -94,11 +94,7 @@ namespace Tests {
                                 break;
 
                             case OperandType.InlineSwitch:
-                                try {
-                                    operandSize = checked(BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4);
-                                } catch (OverflowException) {
-                                    operandSize = 0;
-                                }
+                                operandSize = checked(BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4);
                                 break;
 
                             case OperandType.InlineMethod:
