@@ -65,7 +65,7 @@ namespace Tests {
                     // Multibyte opcode?
                     // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
                     // Partition III, Table 1
-                    if (opcode != OpCodes.Nop.Value && (opcode & 0xfe) == 0) {
+                    if (opcode != OpCodes.Nop.Value && opcode == OpCodes.Prefix1.Value) {
                         opcode = (Int16) (opcode << 8 | byteCodes[offset + 1]);
                     }
 
