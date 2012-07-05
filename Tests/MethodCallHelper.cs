@@ -45,12 +45,14 @@ namespace Tests {
         internal IEnumerable<MemberInfo> GetRecursiveCalls() {
             return _calls.AsParallel()
                 .Where(x => x.Item1 == x.Item2)
+                .Distinct()
                 .Select(x => x.Item1);
         }
 
         internal IEnumerable<MethodInfo> GetIndirectRecursiveCalls() {
             return _calls.AsParallel()
                 .Where(pair => _callsLookup[pair.Item2].Any(x => x != pair.Item2 && x == pair.Item1))
+                .Distinct()
                 .Select(x => x.Item1);
         }
 
