@@ -97,8 +97,13 @@ namespace Tests {
             }
 
             if (session != null) {
-                session.RunTests();
-                if (session.HasFaults()) Faults.AddRange(session.GetFaults());
+                try {
+                    session.RunTests();
+                    if (session.HasFaults()) Faults.AddRange(session.GetFaults());
+                } catch (NotSupportedException ex) {
+                    _logger.Error(ex.Message);
+                    session = null;
+                }
             }
 
             return session != null;

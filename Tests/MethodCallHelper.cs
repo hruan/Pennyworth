@@ -113,7 +113,8 @@ namespace Tests {
 
                         offset += _opcodes[opcode].Size + operandSize;
                     } else {
-                        offset += (opcode & 0xff00) == 0 ? 1 : 2;
+                        _logger.Warn("Found an unknown opcode: 0x{0:x}", opcode);
+                        throw new NotSupportedException(String.Format("Found an unknown opcode: 0x{0:x}", opcode));
                     }
                 }
             }
