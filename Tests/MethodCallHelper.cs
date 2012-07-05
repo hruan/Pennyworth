@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using NLog;
 
 namespace Tests {
     internal sealed class MethodCallHelper {
@@ -10,6 +11,7 @@ namespace Tests {
         private readonly Dictionary<MethodInfo, Byte[]> _methodByteCode;
         private readonly List<Tuple<MethodInfo, MethodInfo>> _calls;
         private readonly ILookup<MethodInfo, MethodInfo> _callsLookup;
+        private readonly Logger _logger;
 
         private static readonly Dictionary<Int16, OpCode> _opcodes;
 
@@ -21,6 +23,8 @@ namespace Tests {
         }
 
         internal MethodCallHelper(Assembly assembly) {
+            _logger = LogManager.GetLogger(GetType().Name);
+
             _assembly = assembly;
             _methodByteCode = assembly.GetTypes()
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance
@@ -129,6 +133,8 @@ namespace Tests {
                                                    callingMethod.GetGenericArguments());
                 } catch (ArgumentException) {
                     // Out of scope
+                } catch (MissingMemberException ex) {
+                    _logger.Warn("A member seem to have been lost; out-of-date assembly? {0}", ex.Message);
                 }
 
                 if (called != null) break;
