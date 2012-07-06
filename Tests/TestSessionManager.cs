@@ -21,7 +21,7 @@ namespace Tests {
             _assemblyRegistry = new AssemblyRegistry<Guid, String>();
         }
 
-        public List<FaultInfo> Faults { get { return _faults; } }
+        public IEnumerable<FaultInfo> Faults { get { return _faults; } }
 
         public Boolean RunTestsFor(String basePath, IEnumerable<String> paths) {
             Debug.Assert(!String.IsNullOrEmpty(basePath) && paths != null);
@@ -99,7 +99,7 @@ namespace Tests {
             if (session != null) {
                 try {
                     session.RunTests();
-                    if (session.HasFaults()) Faults.AddRange(session.GetFaults());
+                    if (session.HasFaults) _faults.AddRange(session.GetFaults());
                 } catch (NotSupportedException ex) {
                     _logger.Error(ex.Message);
                     session = null;
