@@ -43,12 +43,12 @@ namespace Tests {
         }
 
         public Boolean HasFaults() {
-            return _tests.Any(t => t.HasFaults());
+            return _tests.Any(t => t.HasFaults);
         }
 
         public IEnumerable<FaultInfo> GetFaults() {
             return HasFaults()
-                       ? _tests.SelectMany(t => t.Faults).ToList()
+                       ? _tests.SelectMany(t => t.GetFaults()).ToList()
                        : Enumerable.Empty<FaultInfo>().ToList();
         }
 
