@@ -6,15 +6,27 @@ using System.Reflection.Emit;
 using NLog;
 
 namespace Tests {
+    /// <summary>
+    /// From the types in an assembly, get the methods and create caller-callee method pairs
+    /// </summary>
+    /// <remarks>
+    /// To find out which method is being called, we go from the calling method's IL code,
+    /// find the call instructions and resolve the metadata token.  As we're only interested
+    /// in finding out recursive and indirect recursive calls, metadata tokens are resolved
+    /// using the referenced assembly's modules.
+    /// </remarks>
     internal sealed class MethodCallHelper {
         private readonly Assembly _assembly;
-        private readonly Dictionary<MethodInfo, Byte[]> _methodByteCode;
+        private readonly Dictionary<MethodInfo, Byte[]> _methodILBytes;
         private readonly List<Tuple<MethodInfo, MethodInfo>> _calls;
         private readonly ILookup<MethodInfo, MethodInfo> _callsLookup;
         private readonly Logger _logger;
 
         private static readonly Dictionary<Int16, OpCode> _opcodes;
 
+        /// <summary>
+        /// Map bytecode to OpCode structure when the type is loaded
+        /// </summary>
         static MethodCallHelper() {
             _opcodes = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Select(fieldInfo => fieldInfo.GetValue(null))
@@ -22,11 +34,17 @@ namespace Tests {
                 .ToDictionary(opcode => opcode.Value);
         }
 
+        /// <summary>
+        /// Instantiate dependencies, resolve method metadata tokens and from that build
+        /// caller-callee method pairs
+        /// </summary>
+        /// <param name="assembly">the assembly that is being probed</param>
         internal MethodCallHelper(Assembly assembly) {
             _logger = LogManager.GetLogger(GetType().Name);
 
             _assembly = assembly;
-            _methodByteCode = assembly.GetTypes()
+            _methodILBytes = assembly.GetTypes()
+                .AsParallel()
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance
                                               | BindingFlags.NonPublic
                                               | BindingFlags.Public
@@ -36,12 +54,16 @@ namespace Tests {
                 .ToDictionary(mi => mi,
                               mi => mi.GetMethodBody().GetILAsByteArray());
 
-            _calls = new List<Tuple<MethodInfo, MethodInfo>>(_methodByteCode.Count);
+            _calls = new List<Tuple<MethodInfo, MethodInfo>>(_methodILBytes.Count);
             FindCalls();
 
             _callsLookup = _calls.ToLookup(x => x.Item1, x => x.Item2);
         }
 
+        /// <summary>
+        /// Find the recursive methods in the method pairs
+        /// </summary>
+        /// <returns>recursive methods as <see cref="IEnumerable{T}">IEnumerable</see> of MemberInfo</returns>
         internal IEnumerable<MemberInfo> GetRecursiveCalls() {
             return _calls.AsParallel()
                 .Where(x => x.Item1 == x.Item2)
@@ -49,6 +71,10 @@ namespace Tests {
                 .Select(x => x.Item1);
         }
 
+        /// <summary>
+        /// Find indirect recursive method call
+        /// </summary>
+        /// <returns>indirect methods as <see cref="IEnumerable{T}">IEnumerable</see> of MethodInfo</returns>
         internal IEnumerable<MethodInfo> GetIndirectRecursiveCalls() {
             return _calls.AsParallel()
                 .Where(pair => _callsLookup[pair.Item2].Any(x => x != pair.Item2 && x == pair.Item1))
@@ -56,8 +82,12 @@ namespace Tests {
                 .Select(x => x.Item1);
         }
 
+        /// <summary>
+        /// Builds the caller-caller pairs
+        /// </summary>
+        /// <exception cref="NotSupportedException">Encountered unknown bytecode</exception>
         private void FindCalls() {
-            foreach (var kvp in _methodByteCode) {
+            foreach (var kvp in _methodILBytes) {
                 var offset = 0;
                 var byteCodes = kvp.Value;
 
@@ -124,12 +154,18 @@ namespace Tests {
             }
         }
 
-        private MethodInfo ResolveMethod(MethodInfo callingMethod, Int32 operand) {
+        /// <summary>
+        /// Resolve metadata token using the assembly's modules
+        /// </summary>
+        /// <param name="callingMethod">the caller</param>
+        /// <param name="metadataToken">metadata token for the method being called</param>
+        /// <returns></returns>
+        private MethodInfo ResolveMethod(MethodInfo callingMethod, Int32 metadataToken) {
             MethodBase called = null;
 
             foreach (var module in _assembly.GetModules()) {
                 try {
-                    called = module.ResolveMethod(operand,
+                    called = module.ResolveMethod(metadataToken,
                                                    callingMethod.DeclaringType.GetGenericArguments(),
                                                    callingMethod.GetGenericArguments());
                 } catch (ArgumentException) {
