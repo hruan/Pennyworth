@@ -67,7 +67,7 @@ namespace Tests {
                     // Multibyte opcode?
                     // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
                     // Partition III, Table 1
-                    if (opcode != OpCodes.Nop.Value && opcode == OpCodes.Prefix1.Value) {
+                    if (opcode == OpCodes.Prefix1.Value) {
                         opcode = (Int16) (opcode << 8 | byteCodes[offset + 1]);
                     }
 
@@ -75,6 +75,8 @@ namespace Tests {
                     if (_opcodes.ContainsKey(opcode)) {
                         var instruction = _opcodes[opcode];
 
+                        // We're only interested in call instructions but we'll have to
+                        // adjust offset accordingly
                         switch (instruction.OperandType) {
                             case OperandType.InlineNone:
                                 operandSize = 0;
@@ -96,7 +98,7 @@ namespace Tests {
                                 break;
 
                             case OperandType.InlineSwitch:
-                                operandSize = checked(BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4);
+                                operandSize += BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4;
                                 break;
 
                             case OperandType.InlineMethod:
