@@ -57,14 +57,20 @@ namespace Tests {
         /// <summary>
         /// Execute prepared tests on given assembly
         /// </summary>
-        public void RunTests() {
+        public Boolean RunTests() {
             Debug.Assert(_preparedTests != null);
 
             if (_registry.Register(CurrentAssemblyGuid, _path)) {
                 foreach (var test in _preparedTests) {
-                    test.Run();
+                    try {
+                        test.Run();
+                    } catch (NotSupportedException) {
+                        return false;
+                    }
                 } 
             }
+
+            return true;
         }
 
         public Boolean HasFaults {

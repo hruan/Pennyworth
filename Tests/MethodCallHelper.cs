@@ -147,7 +147,7 @@ namespace Tests {
 
                         offset += _opcodes[opcode].Size + operandSize;
                     } else {
-                        _logger.Warn("Found an unknown opcode: 0x{0:x}", opcode);
+                        _logger.Warn("Found an unknown opcode 0x{0:x} in {1}::{2} of {3}.", opcode, kvp.Key.DeclaringType.FullName, kvp.Key.Name, _assembly.FullName);
                         throw new NotSupportedException(String.Format("Found an unknown opcode: 0x{0:x}", opcode));
                     }
                 }

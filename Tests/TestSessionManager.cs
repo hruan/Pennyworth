@@ -96,17 +96,17 @@ namespace Tests {
                 _logger.Error("Couldn't instantiate tester: {0}", ex.InnerException.Message);
             }
 
+            var testsRan = false;
             if (session != null) {
-                try {
-                    session.RunTests();
-                    if (session.HasFaults) _faults.AddRange(session.GetFaults());
-                } catch (NotSupportedException ex) {
-                    _logger.Error(ex.Message);
-                    session = null;
+                testsRan = session.RunTests();
+                if (testsRan && session.HasFaults) {
+                    _faults.AddRange(session.GetFaults());
+                } else if (!testsRan) {
+                    _logger.Error("Some tests failed to run, see log file for details.");
                 }
             }
 
-            return session != null;
+            return session != null && testsRan;
         }
     }
 
