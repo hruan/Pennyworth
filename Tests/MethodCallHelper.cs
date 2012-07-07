@@ -88,68 +88,81 @@ namespace Tests {
         /// <exception cref="NotSupportedException">Encountered unknown bytecode</exception>
         private void FindCalls() {
             foreach (var kvp in _methodILBytes) {
-                var offset = 0;
-                var byteCodes = kvp.Value;
+                GetCalledMethods(kvp.Key, kvp.Value)
+                    .Where(x => x != null)
+                    .ToList()
+                    .ForEach(mi => _calls.Add(Tuple.Create(kvp.Key, mi)));
+            }
+        }
 
-                while (offset < byteCodes.Length) {
-                    Int16 opcode = byteCodes[offset];
+        /// <summary>
+        /// Find call instructions within a method's byte codes and attempt to resolve the called
+        /// method.
+        /// </summary>
+        /// <param name="caller"><see cref="MethodInfo"/> of calling method</param>
+        /// <param name="byteCodes">IL of calling method as a byte array</param>
+        /// <returns></returns>
+        private IEnumerable<MethodInfo> GetCalledMethods(MethodInfo caller, Byte[] byteCodes) {
+            var offset = 0;
+            while (offset < byteCodes.Length) {
+                Int16 opcode = byteCodes[offset];
 
-                    // Multibyte opcode?
-                    // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
-                    // Partition III, Table 1
-                    if (opcode == OpCodes.Prefix1.Value) {
-                        opcode = (Int16) (opcode << 8 | byteCodes[offset + 1]);
+                // Multibyte opcode?
+                // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
+                // Partition III, Table 1
+                if (opcode == OpCodes.Prefix1.Value) {
+                    opcode = (Int16) (opcode << 8 | byteCodes[offset + 1]);
+                }
+
+                var operandSize = 4;
+                if (_opcodes.ContainsKey(opcode)) {
+                    var instruction = _opcodes[opcode];
+
+                    // We're only interested in call instructions but we'll have to
+                    // adjust offset accordingly
+                    switch (instruction.OperandType) {
+                        case OperandType.InlineNone:
+                            operandSize = 0;
+                            break;
+
+                        case OperandType.ShortInlineBrTarget:
+                        case OperandType.ShortInlineI:
+                        case OperandType.ShortInlineVar:
+                            operandSize = 1;
+                            break;
+
+                        case OperandType.InlineVar:
+                            operandSize = 2;
+                            break;
+
+                        case OperandType.InlineI8:
+                        case OperandType.InlineR:
+                            operandSize = 8;
+                            break;
+
+                        case OperandType.InlineSwitch:
+                            operandSize += BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4;
+                            break;
+
+                        case OperandType.InlineMethod:
+                            if (instruction.FlowControl == FlowControl.Call) {
+                                var operand       = BitConverter.ToInt32(byteCodes, offset + instruction.Size);
+                                var callingMethod = caller.GetBaseDefinition();
+
+                                yield return ResolveMethod(callingMethod, operand);
+                            }
+
+                            break;
                     }
 
-                    var operandSize = 4;
-                    if (_opcodes.ContainsKey(opcode)) {
-                        var instruction = _opcodes[opcode];
-
-                        // We're only interested in call instructions but we'll have to
-                        // adjust offset accordingly
-                        switch (instruction.OperandType) {
-                            case OperandType.InlineNone:
-                                operandSize = 0;
-                                break;
-
-                            case OperandType.ShortInlineBrTarget:
-                            case OperandType.ShortInlineI:
-                            case OperandType.ShortInlineVar:
-                                operandSize = 1;
-                                break;
-
-                            case OperandType.InlineVar:
-                                operandSize = 2;
-                                break;
-
-                            case OperandType.InlineI8:
-                            case OperandType.InlineR:
-                                operandSize = 8;
-                                break;
-
-                            case OperandType.InlineSwitch:
-                                operandSize += BitConverter.ToInt32(byteCodes, offset + instruction.Size) * 4;
-                                break;
-
-                            case OperandType.InlineMethod:
-                                if (instruction.FlowControl == FlowControl.Call) {
-                                    var operand       = BitConverter.ToInt32(byteCodes, offset + instruction.Size);
-                                    var callingMethod = kvp.Key.GetBaseDefinition();
-
-                                    var resolved = ResolveMethod(callingMethod, operand);
-                                    if (resolved != null) {
-                                        _calls.Add(Tuple.Create(kvp.Key, resolved));
-                                    }
-                                }
-
-                                break;
-                        }
-
-                        offset += _opcodes[opcode].Size + operandSize;
-                    } else {
-                        _logger.Warn("Found an unknown opcode 0x{0:x} in {1}::{2} of {3}.", opcode, kvp.Key.DeclaringType.FullName, kvp.Key.Name, _assembly.FullName);
-                        throw new NotSupportedException(String.Format("Found an unknown opcode: 0x{0:x}", opcode));
-                    }
+                    offset += _opcodes[opcode].Size + operandSize;
+                } else {
+                    _logger.Warn("Found an unknown opcode 0x{0:x} in {1}::{2} of {3}.",
+                                 opcode,
+                                 caller.DeclaringType.FullName,
+                                 caller.Name,
+                                 _assembly.FullName);
+                    throw new NotSupportedException(String.Format("Found an unknown opcode: 0x{0:x}", opcode));
                 }
             }
         }
