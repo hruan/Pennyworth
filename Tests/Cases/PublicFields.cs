@@ -10,10 +10,13 @@ namespace Tests.Cases {
 
         public override void Run() {
             _faultyMembers.AddRange(_assembly.GetTypes()
-                .Where(t => !t.IsNested)
-                .SelectMany(t => t.GetFields(BindingFlags.Instance | BindingFlags.Public))
-                // Apparently, enums have a special public field named value__
-                .Where(fi => fi.DeclaringType != null && !fi.DeclaringType.IsEnum));
+                                        .Where(t => !t.IsNested)
+                                        .SelectMany(t => t.GetFields(BindingFlags.Instance
+                                                                     | BindingFlags.Public
+                                                                     | BindingFlags.DeclaredOnly))
+                                        // Apparently, enums have a special public field named value__
+                                        .Where(fi => fi.DeclaringType != null
+                                                     && !fi.DeclaringType.IsEnum));
         }
     }
 }
