@@ -23,7 +23,7 @@ namespace Tests {
         /// </summary>
         /// <remarks>
         /// Concrete test cases must make sure the populate <see cref="_faultyMembers"/> as
-        /// <see cref="TestSession"/> calls <see cref="HasFaults"/> and <see cref="Faults"/>
+        /// <see cref="TestRunner"/> calls <see cref="HasFaults"/> and <see cref="Faults"/>
         /// to query and retrieve the results respectively.
         /// </remarks>
         public abstract void Run();
