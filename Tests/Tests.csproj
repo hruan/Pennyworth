@@ -51,8 +51,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Cases\PublicFields.cs" />
     <Compile Include="Cases\RecursiveCalls.cs" />
+    <Compile Include="TestRunner.cs" />
     <Compile Include="TestSession.cs" />
-    <Compile Include="TestSessionManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

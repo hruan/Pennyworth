@@ -4,102 +4,163 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using NLog;
 
 namespace Tests {
-    /// <summary>
-    /// Loads an assembly and constructs are test session around it. Session
-    /// can be controlled across AppDomains.
-    /// </summary>
-    public sealed class TestSession : MarshalByRefObject {
-        private readonly Assembly _assembly;
-        private readonly String _path;
-        private readonly ICollection<AbstractTest> _preparedTests;
-        private readonly AssemblyRegistry<Guid, String> _registry;
+	/// <summary>
+	/// A session consisting of a set of assemblies that need to be tested. Uses
+	/// <see cref="TestRunner"/> to test each assembly.
+	/// </summary>
+	/// <remarks>
+	/// Assemblies are loaded into a separate AppDomain which is unloaded after all
+	/// tests have concluded.
+	/// </remarks>
+	public sealed class TestSession : IDisposable {
+		private AppDomain _appDomain;
+		private readonly String _basePath;
+		private readonly List<FaultInfo> _faults;
+		private readonly AssemblyRegistry<Guid, String> _assemblyRegistry;
+		private readonly Logger _logger;
 
-        private static readonly List<Type> _testCases;
+		public TestSession(string basePath) {
+			Debug.Assert(!String.IsNullOrEmpty(basePath));
 
-        /// <summary>
-        /// Find tests through reflection when type is loaded
-        /// </summary>
-        static TestSession() {
-            var baseType = typeof(AbstractTest);
+			_faults = new List<FaultInfo>();
+			_logger = LogManager.GetLogger(GetType().Name);
+			_assemblyRegistry = new AssemblyRegistry<Guid, String>();
 
-            _testCases = Assembly.GetExecutingAssembly()
-                .GetExportedTypes()
-                .Where(t => t.IsClass
-                            && !t.IsAbstract
-                            && baseType.IsAssignableFrom(t)
-                            && Attribute.GetCustomAttribute(t, typeof(TestCaseAttribute), false) != null)
-                .ToList();
-        }
+			var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+							   + Path.DirectorySeparatorChar + "Cache";
 
-        /// <summary>
-        /// Construct a session for a given assembly. Also attempts to register
-        /// the assembly identified by the manifest module's UUID; tests are
-        /// only run if registration succeeds.
-        /// </summary>
-        /// <param name="path">path to the assembly to test</param>
-        /// <param name="registry">registry where assembly is to be registered</param>
-        public TestSession(String path, AssemblyRegistry<Guid, String> registry) {
-            try {
-                _path          = path;
-                _assembly      = Assembly.LoadFrom(path);
-                _preparedTests = PrepareTests().ToList();
-                _registry      = registry;
+			_basePath = basePath;
+			CreateWorkerDomain(Path.GetDirectoryName(_basePath), cacheDirPath);
+		}
 
-            } catch (ArgumentException argumentException) {
-                Debug.WriteLine(argumentException.ToString());
-            } catch (IOException ioException) {
-                Debug.WriteLine(ioException.ToString());
-            }
-        }
+		public IEnumerable<FaultInfo> Faults { get { return _faults; } }
 
-        /// <summary>
-        /// Execute prepared tests on given assembly
-        /// </summary>
-        public Boolean RunTests() {
-            Debug.Assert(_preparedTests != null);
+		/// <summary>
+		/// Prepare and executes tests for each assemblies whose path is
+		/// supplied.
+		/// </summary>
+		/// <param name="paths">paths of assemblies to test</param>
+		/// <returns>true if all tests suceeded; false otherwise</returns>
+		public Boolean RunTestsFor(IEnumerable<String> paths) {
+			Debug.Assert(paths != null);
 
-            if (_registry.Register(CurrentAssemblyGuid, _path)) {
-                foreach (var test in _preparedTests) {
-                    try {
-                        test.Run();
-                    } catch (NotSupportedException) {
-                        return false;
-                    }
-                } 
-            }
+			if (paths.Any(path => !PerformTestsOn(path))) {
+				_logger.Error("Halting tests.");
+				return false;
+			}
 
-            return true;
-        }
+			if (HasDuplicates()) {
+				var dups = _assemblyRegistry.Duplicates()
+					.Select(dup => DuplicatesRelativeLocation(dup, new Uri(_basePath)));
 
-        public Boolean HasFaults {
-            get { return _preparedTests.Any(t => t.HasFaults); }
-        }
+				_logger.Warn("There were some duplicate assemblies found.  Only the first one was tested.");
+				foreach (var dup in dups) {
+					_logger.Warn("{0} are duplicates", dup.Aggregate((cur, next) => cur + ", " + next));
+				}
+			}
 
-        /// <summary>
-        /// Gets the faults from executed tests; results are flattened
-        /// </summary>
-        /// <returns>flattened list of faults from all the tests; empty list if no faults were found</returns>
-        public IEnumerable<FaultInfo> GetFaults() {
-            return HasFaults
-                       ? _preparedTests.SelectMany(t => t.GetFaults()).ToList()
-                       : Enumerable.Empty<FaultInfo>().ToList();
-        }
+			return true;
+		}
 
-        /// <summary>
-        /// Identifies the assembly through the UUID of the module containing
-        /// the assembly manifest.
-        /// </summary>
-        private Guid CurrentAssemblyGuid {
-            get { return _assembly.ManifestModule.ModuleVersionId; }
-        }
+		/// <summary>
+		/// Unload worker AppDomain when disposed
+		/// </summary>
+		public void Dispose() {
+			if (_appDomain != null) {
+				AppDomain.Unload(_appDomain);
+				_logger.Debug("Worker domain unloaded.");
+			}
+		}
 
-        /// <summary>
-        /// Instantiate all found cases
-        /// </summary>
-        private IEnumerable<AbstractTest> PrepareTests() {
-            return _testCases.Select(type => Activator.CreateInstance(type, _assembly, _path) as AbstractTest);
-        }
-    }
+		/// <summary>
+		/// Creates a new AppDomain within which to run the tests.
+		/// Assemblies are shadow copied to a cache directory so it doesn't
+		/// interrupt any recompilation that's done during the review
+		/// process.
+		/// </summary>
+		/// <param name="name">friendly name of the AppDomain</param>
+		/// <param name="cachePath">where to shadow copy assemblies</param>
+		private void CreateWorkerDomain(String name, String cachePath) {
+			_appDomain = AppDomain.CreateDomain(name,
+												null,
+												new AppDomainSetup {
+													CachePath = cachePath,
+													DisallowCodeDownload = true,
+													ShadowCopyFiles = "true"
+												});
+			_logger.Debug("Created worker AppDomain.");
+		}
+
+		private Boolean HasDuplicates() {
+			return _assemblyRegistry.Duplicates().Any();
+		}
+
+		/// <summary>
+		/// Get paths to duplicates using relative path from <c>_basePath</c>
+		/// </summary>
+		/// <param name="duplicates">paths to duplicates</param>
+		/// <param name="basePath">the <c>_basePath</c> as an URI</param>
+		/// <returns></returns>
+		private IEnumerable<String> DuplicatesRelativeLocation(IEnumerable<String> duplicates, Uri basePath) {
+			return duplicates.Select(x => basePath.MakeRelativeUri(new Uri(x)).ToString())
+				.Select(x => Uri.UnescapeDataString(x)
+								.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
+		}
+
+		/// <summary>
+		/// Instantiate <see cref="TestRunner"/> in worker AppDomain and use
+		/// it to test an assembly.
+		/// </summary>
+		/// <param name="path">path to assembly to test</param>
+		/// <returns>true if tests were performed correctly; false otherwise</returns>
+		/// <remarks>
+		/// Return value depends on whether tests were executed correctly and
+		/// does not reflect whether any faults were detected.
+		/// </remarks>
+		private Boolean PerformTestsOn(String path) {
+			Debug.Assert(path != null);
+
+			_logger.Info("Testing {0}", path);
+			TestRunner session = null;
+			try {
+				session = (TestRunner) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
+																			   typeof(TestRunner).FullName,
+																			   ignoreCase:  false,
+																			   bindingAttr: BindingFlags.Default,
+																			   binder:      null,
+																			   args:        new Object[] { path, _assemblyRegistry },
+																			   culture:     null,
+																			   activationAttributes: null);
+			} catch (TargetInvocationException ex) {
+				_logger.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
+			}
+
+			var testsRan = false;
+			if (session != null) {
+				testsRan = session.RunTests();
+				if (testsRan && session.HasFaults) {
+					_faults.AddRange(session.GetFaults());
+				} else if (!testsRan) {
+					_logger.Error("Some tests failed to run, see log file for details.");
+				}
+			}
+
+			return session != null && testsRan;
+		}
+	}
+
+	/// <summary>
+	/// Used to populate the list of results and getting data across AppDomains
+	/// </summary>
+	[Serializable]
+	public struct FaultInfo {
+		public String FaultType { get; set; }
+		public String MemberType { get; set; }
+		public String Path { get; set; }
+		public String Name { get; set; }
+		public String DeclaringType { get; set; }
+	}
 }

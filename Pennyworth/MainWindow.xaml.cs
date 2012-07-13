@@ -43,8 +43,8 @@ namespace Pennyworth {
                 var basePath = DropHelper.GetBaseDir(paths);
 
                 if (assemblies.Any()) {
-                    using (var helper = new TestSessionManager()) {
-                        var testsRan = helper.RunTestsFor(basePath, assemblies);
+                    using (var helper = new TestSession(basePath)) {
+                        var testsRan = helper.RunTestsFor(assemblies);
 
                         imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
                         offendingMembers.ItemsSource = helper.Faults;
