@@ -26,7 +26,8 @@ namespace Tests {
         /// <see cref="TestRunner"/> calls <see cref="HasFaults"/> and <see cref="Faults"/>
         /// to query and retrieve the results respectively.
         /// </remarks>
-        public abstract void Run();
+		/// <returns><c>true</c> if tests ran successfully; <c>false</c> otherwise</returns>
+        public abstract Boolean Run();
 
         /// <summary>
         /// Returns the faults detected by a test case

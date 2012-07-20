@@ -7,8 +7,14 @@ namespace Tests.Cases {
         public RecursiveCalls(Assembly assembly, String path)
             : base(assembly, path) { }
 
-        public override void Run() {
-            _faultyMembers.AddRange(new MethodCallHelper(_assembly).GetRecursiveCalls());
+        public override Boolean Run() {
+			try {
+				_faultyMembers.AddRange(new MethodCallHelper(_assembly).GetRecursiveCalls());
+			} catch (NotSupportedException) {
+				return false;
+			}
+
+	        return true;
         }
     }
 }

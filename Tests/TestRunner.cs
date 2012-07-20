@@ -63,17 +63,7 @@ namespace Tests {
         public Boolean RunTests() {
             Debug.Assert(_preparedTests != null);
 
-            if (_registry.Register(CurrentAssemblyGuid, _path)) {
-                foreach (var test in _preparedTests) {
-                    try {
-                        test.Run();
-                    } catch (NotSupportedException) {
-                        return false;
-                    }
-                } 
-            }
-
-            return true;
+			return _preparedTests.All(test => test.Run());
         }
 
         public Boolean HasFaults {

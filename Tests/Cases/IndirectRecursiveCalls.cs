@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
 namespace Tests.Cases {
     [TestCase("Indirect recursion")]
@@ -6,8 +7,10 @@ namespace Tests.Cases {
         public IndirectRecursiveCalls(Assembly assembly, string path)
             : base(assembly, path) {}
 
-        public override void Run() {
+        public override Boolean Run() {
             _faultyMembers.AddRange(new MethodCallHelper(_assembly).GetIndirectRecursiveCalls());
+
+	        return true;
         }
     }
 }
