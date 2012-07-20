@@ -124,31 +124,31 @@ namespace Tests {
 			Debug.Assert(path != null);
 
 			_logger.Info("Testing {0}", path);
-			TestRunner session = null;
+			TestRunner runner = null;
 			try {
-				session = (TestRunner) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
-																			   typeof(TestRunner).FullName,
-																			   ignoreCase:  false,
-																			   bindingAttr: BindingFlags.Default,
-																			   binder:      null,
-																			   args:        new Object[] { path, _assemblyRegistry },
-																			   culture:     null,
-																			   activationAttributes: null);
+				runner = (TestRunner) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
+				                                                             typeof(TestRunner).FullName,
+				                                                             ignoreCase: false,
+				                                                             bindingAttr: BindingFlags.Default,
+				                                                             binder: null,
+				                                                             args: new Object[] {path, _assemblyRegistry},
+				                                                             culture: null,
+				                                                             activationAttributes: null);
 			} catch (TargetInvocationException ex) {
 				_logger.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
 			}
 
 			var testsRan = false;
-			if (session != null) {
-				testsRan = session.RunTests();
-				if (testsRan && session.HasFaults) {
-					_faults.AddRange(session.GetFaults());
+			if (runner != null) {
+				testsRan = runner.RunTests();
+				if (testsRan && runner.HasFaults) {
+					_faults.AddRange(runner.GetFaults());
 				} else if (!testsRan) {
 					_logger.Error("Some tests failed to run, see log file for details.");
 				}
 			}
 
-			return session != null && testsRan;
+			return runner != null && testsRan;
 		}
 	}
 
