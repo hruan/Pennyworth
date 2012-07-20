@@ -16,8 +16,7 @@ namespace Tests {
     public sealed class TestRunner : MarshalByRefObject {
         private readonly Assembly _assembly;
         private readonly String _path;
-        private readonly ICollection<AbstractTest> _preparedTests;
-        private readonly AssemblyRegistry<Guid, String> _registry;
+        private readonly List<AbstractTest> _preparedTests;
 
         private static readonly List<Type> _testCases;
 
@@ -42,13 +41,11 @@ namespace Tests {
         /// only run if registration succeeds.
         /// </summary>
         /// <param name="path">path to the assembly to test</param>
-        /// <param name="registry">registry where assembly is to be registered</param>
-        public TestRunner(String path, AssemblyRegistry<Guid, String> registry) {
+        public TestRunner(String path) {
             try {
                 _path          = path;
                 _assembly      = Assembly.LoadFrom(path);
                 _preparedTests = PrepareTests().ToList();
-                _registry      = registry;
 
             } catch (ArgumentException argumentException) {
                 Debug.WriteLine(argumentException.ToString());
@@ -84,7 +81,7 @@ namespace Tests {
         /// Identifies the assembly through the UUID of the module containing
         /// the assembly manifest.
         /// </summary>
-        private Guid CurrentAssemblyGuid {
+        internal Guid CurrentAssemblyGuid {
             get { return _assembly.ManifestModule.ModuleVersionId; }
         }
 

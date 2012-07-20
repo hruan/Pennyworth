@@ -123,7 +123,6 @@ namespace Tests {
 		private Boolean PerformTestsOn(String path) {
 			Debug.Assert(path != null);
 
-			_logger.Info("Testing {0}", path);
 			TestRunner runner = null;
 			try {
 				runner = (TestRunner) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
@@ -131,24 +130,25 @@ namespace Tests {
 				                                                             ignoreCase: false,
 				                                                             bindingAttr: BindingFlags.Default,
 				                                                             binder: null,
-				                                                             args: new Object[] {path, _assemblyRegistry},
+				                                                             args: new Object[] { path },
 				                                                             culture: null,
 				                                                             activationAttributes: null);
 			} catch (TargetInvocationException ex) {
 				_logger.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
 			}
 
-			var testsRan = false;
-			if (runner != null) {
-				testsRan = runner.RunTests();
+			if (runner != null && _assemblyRegistry.Register(runner.CurrentAssemblyGuid, path)) {
+				_logger.Info("Testing {0}", path);
+				var testsRan = runner.RunTests();
 				if (testsRan && runner.HasFaults) {
 					_faults.AddRange(runner.GetFaults());
 				} else if (!testsRan) {
 					_logger.Error("Some tests failed to run, see log file for details.");
+					return false;
 				}
 			}
 
-			return runner != null && testsRan;
+			return true;
 		}
 	}
 

@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Tests {
-	public sealed class AssemblyRegistry<TKey, TElem> : MarshalByRefObject {
+	[Serializable]
+	public sealed class AssemblyRegistry<TKey, TElem> {
 		private readonly Dictionary<TKey, List<TElem>> _registry;
 
 		public AssemblyRegistry() {
