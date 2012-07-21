@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Tests {
     public abstract class AbstractTest {
-        protected readonly Assembly _assembly;
+        protected readonly Assembly         _assembly;
         protected readonly List<MemberInfo> _faultyMembers;
 
         // Assemblies are shadow copied when loaded and we still need to tell the location

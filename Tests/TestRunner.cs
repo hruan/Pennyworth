@@ -15,8 +15,8 @@ namespace Tests {
     /// Can be controlled across AppDomains.
     /// </remarks>
     public sealed class TestRunner : MarshalByRefObject {
-        private readonly Assembly _assembly;
-        private readonly String _path;
+        private readonly Assembly           _assembly;
+        private readonly String             _path;
         private readonly List<AbstractTest> _preparedTests;
 
         private static readonly List<Type> _testCases;

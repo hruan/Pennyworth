@@ -16,11 +16,11 @@ namespace Tests {
     /// using the referenced assembly's modules.
     /// </remarks>
     internal sealed class MethodCallHelper {
-        private readonly Assembly _assembly;
-        private readonly Dictionary<MethodInfo, Byte[]> _methodILBytes;
+        private readonly Assembly                            _assembly;
+        private readonly Dictionary<MethodInfo, Byte[]>      _methodILBytes;
         private readonly List<Tuple<MethodInfo, MethodInfo>> _calls;
-        private readonly ILookup<MethodInfo, MethodInfo> _callsLookup;
-        private readonly Logger _logger;
+        private readonly ILookup<MethodInfo, MethodInfo>     _callsLookup;
+        private readonly Logger                              _logger;
 
         private static readonly Dictionary<Int16, OpCode> _opcodes;
 
