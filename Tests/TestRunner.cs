@@ -45,7 +45,7 @@ namespace Tests {
         public TestRunner(String path) {
             try {
                 _path          = path;
-                _assembly      = Assembly.LoadFrom(path);
+                _assembly      = Assembly.LoadFile(path);
                 _preparedTests = PrepareTests().ToList();
 
             } catch (ArgumentException argumentException) {
