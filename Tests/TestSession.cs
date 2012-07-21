@@ -17,17 +17,18 @@ namespace Tests {
 	/// </remarks>
 	public sealed class TestSession : IDisposable {
 		private AppDomain _appDomain;
-		private readonly String _basePath;
-		private readonly List<FaultInfo> _faults;
-		private readonly AssemblyRegistry<Guid, String> _assemblyRegistry;
-		private readonly Logger _logger;
+
+		private readonly String           _basePath;
+		private readonly List<FaultInfo>  _faults;
+		private readonly AssemblyRegistry _assemblyRegistry;
+		private readonly Logger           _logger;
 
 		public TestSession(string basePath) {
 			Debug.Assert(!String.IsNullOrEmpty(basePath));
 
 			_faults = new List<FaultInfo>();
 			_logger = LogManager.GetLogger(GetType().Name);
-			_assemblyRegistry = new AssemblyRegistry<Guid, String>();
+			_assemblyRegistry = new AssemblyRegistry();
 
 			var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
 							   + Path.DirectorySeparatorChar + "Cache";
@@ -42,23 +43,24 @@ namespace Tests {
 		/// Prepare and executes tests for each assemblies whose path is
 		/// supplied.
 		/// </summary>
-		/// <param name="paths">paths of assemblies to test</param>
+		/// <param name="assemblies">paths to assemblies to test</param>
 		/// <returns>true if all tests suceeded; false otherwise</returns>
-		public Boolean RunTestsFor(IEnumerable<String> paths) {
-			Debug.Assert(paths != null);
+		public Boolean RunTestsFor(IEnumerable<String> assemblies) {
+			Debug.Assert(assemblies != null);
 
-			if (paths.Any(path => !PerformTestsOn(path))) {
+			if (assemblies.Any(path => !PerformTestsOn(path))) {
 				_logger.Error("Halting tests.");
 				return false;
 			}
 
-			if (HasDuplicates()) {
-				var dups = _assemblyRegistry.Duplicates()
-					.Select(dup => DuplicatesRelativeLocation(dup, new Uri(_basePath)));
-
+			var duplicates = _assemblyRegistry.Duplicates().ToList();
+			if (duplicates.Count > 0) {
 				_logger.Warn("There were some duplicate assemblies found.  Only the first one was tested.");
-				foreach (var dup in dups) {
-					_logger.Warn("{0} are duplicates", dup.Aggregate((cur, next) => cur + ", " + next));
+
+				var rpaths = duplicates.Select(dup => dup.Select(x => x.Path))
+					.Select(path => DuplicatesRelativeLocation(path, new Uri(_basePath)));
+				foreach (var paths in rpaths) {
+					_logger.Warn("{0} are duplicates", paths.Aggregate((cur, next) => cur + ", " + next));
 				}
 			}
 
@@ -92,10 +94,6 @@ namespace Tests {
 													ShadowCopyFiles = "true"
 												});
 			_logger.Debug("Created worker AppDomain.");
-		}
-
-		private Boolean HasDuplicates() {
-			return _assemblyRegistry.Duplicates().Any();
 		}
 
 		/// <summary>
@@ -137,7 +135,7 @@ namespace Tests {
 				_logger.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
 			}
 
-			if (runner != null && _assemblyRegistry.Register(runner.CurrentAssemblyGuid, path)) {
+			if (runner != null && _assemblyRegistry.Register(runner.AssemblyInfo)) {
 				_logger.Info("Testing {0}", path);
 				var testsRan = runner.RunTests();
 				if (testsRan && runner.HasFaults) {
@@ -157,10 +155,10 @@ namespace Tests {
 	/// </summary>
 	[Serializable]
 	public struct FaultInfo {
-		public String FaultType { get; set; }
-		public String MemberType { get; set; }
-		public String Path { get; set; }
-		public String Name { get; set; }
+		public String FaultType     { get; set; }
+		public String MemberType    { get; set; }
+		public String Path          { get; set; }
+		public String Name          { get; set; }
 		public String DeclaringType { get; set; }
 	}
 }

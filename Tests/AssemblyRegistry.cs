@@ -4,25 +4,52 @@ using System.Linq;
 
 namespace Tests {
 	[Serializable]
-	public sealed class AssemblyRegistry<TKey, TElem> {
-		private readonly Dictionary<TKey, List<TElem>> _registry;
+	public sealed class AssemblyRegistry {
+		private readonly List<AssemblyInfo> _registry;
 
 		public AssemblyRegistry() {
-			_registry = new Dictionary<TKey, List<TElem>>();
+			_registry = new List<AssemblyInfo>();
 		}
 
-		public Boolean Register(TKey key, TElem elem) {
-			if (_registry.ContainsKey(key)) {
-				_registry[key].Add(elem);
-				return false;
-			}
-			
-			_registry[key] = new List<TElem> { elem };
-			return true;
+		public Boolean Register(AssemblyInfo info) {
+			var knownKey = Exists(info);
+			_registry.Add(info);
+
+			return !knownKey;
 		}
 
-		public IEnumerable<List<TElem>> Duplicates() {
-			return _registry.Values.Where(x => x.Count > 1);
+		public IEnumerable<IGrouping<Guid, AssemblyInfo>> Duplicates() {
+			var lookup = _registry.ToLookup(x => x.ManifestGuid);
+			return lookup.Where(x => lookup[x.Key].Count() > 1);
+		}
+
+		private Boolean Exists(AssemblyInfo needle) {
+			_registry.Sort();
+			return _registry.BinarySearch(needle) >= 0;
+		}
+	}
+
+	[Serializable]
+	public sealed class AssemblyInfo : IEquatable<AssemblyInfo>, IComparable<AssemblyInfo> {
+		public Guid ManifestGuid { get; set; }
+		public Guid AssemblyGuid { get; set; }
+		public String Path       { get; set; }
+
+		public int CompareTo(AssemblyInfo other) {
+			if (ReferenceEquals(this, other)) return 0;
+			if (other == null) return 1;
+
+			return ManifestGuid.CompareTo(other.ManifestGuid);
+		}
+
+		public Boolean Equals(AssemblyInfo other) {
+			if (other == null) return false;
+
+			return ManifestGuid.Equals(other.ManifestGuid);
+		}
+
+		public override int GetHashCode() {
+			return ManifestGuid.GetHashCode();
 		}
 	}
 }

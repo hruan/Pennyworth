@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Tests {
     /// <summary>
@@ -77,13 +78,30 @@ namespace Tests {
                        : Enumerable.Empty<FaultInfo>().ToList();
         }
 
-        /// <summary>
-        /// Identifies the assembly through the UUID of the module containing
-        /// the assembly manifest.
-        /// </summary>
-        internal Guid CurrentAssemblyGuid {
-            get { return _assembly.ManifestModule.ModuleVersionId; }
-        }
+		/// <summary>
+		/// Grab the UUIDs and path for the assembly
+		/// </summary>
+	    public AssemblyInfo AssemblyInfo {
+		    get {
+			    return new AssemblyInfo {
+					ManifestGuid = _assembly.ManifestModule.ModuleVersionId,
+				    AssemblyGuid = AssemblyGuidAttribute,
+				    Path         = _path
+			    };
+		    }
+	    }
+
+		/// <summary>
+		/// Grab UUID for the assembly is there is one defined
+		/// </summary>
+	    private Guid AssemblyGuidAttribute {
+		    get {
+				var attr = Attribute.GetCustomAttribute(_assembly, typeof(GuidAttribute)) as GuidAttribute;
+			    return attr != null
+				           ? new Guid(attr.Value)
+				           : Guid.Empty;
+		    }
+	    }
 
         /// <summary>
         /// Instantiate all found cases
