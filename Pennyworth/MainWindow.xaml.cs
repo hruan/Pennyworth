@@ -6,12 +6,14 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using NLog;
+using Pennyworth.Helpers;
 using Tests;
 
 namespace Pennyworth {
     public partial class MainWindow {
         private readonly BitmapImage _yayImage;
         private readonly BitmapImage _nayImage;
+        private readonly Logger      _logger;
 
         private readonly Logger _logger;
 

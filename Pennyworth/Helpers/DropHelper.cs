@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Pennyworth {
+namespace Pennyworth.Helpers {
 	public static class DropHelper {
 		/// <summary>
 		/// Find assemblies in the files and/or directories

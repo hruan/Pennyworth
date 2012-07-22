@@ -61,7 +61,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="DropHelper.cs" />
+    <Compile Include="Helpers\DropHelper.cs" />
+    <Compile Include="Helpers\RegistrySerializer.cs" />
+    <Compile Include="Helpers\SerializationHelper.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
