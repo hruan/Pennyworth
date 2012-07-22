@@ -4,6 +4,9 @@ using NLog;
 using Tests;
 
 namespace Pennyworth.Helpers {
+	/// <summary>
+	/// Persists registry between sessions
+	/// </summary>
 	public static class RegistrySerializer {
 	    private const String AssemblyRegistryPath = @"Pennyworth.dat";
 
@@ -15,6 +18,8 @@ namespace Pennyworth.Helpers {
 		}
 
 		public static AssemblyRegistry GetRegistry() {
+			if (_registry != null) return _registry;
+
 			try {
 				_registry = SerializationHelper.Deserialize<AssemblyRegistry>(AssemblyRegistryPath,
 				                                                             SerializationType.Binary);
