@@ -36,8 +36,8 @@
                 </ListView>
             </Grid>
         </GroupBox>
-        <TextBlock HorizontalAlignment="Stretch" Name="textBlock1" Text="Drag and drop files and/or folders into the window." VerticalAlignment="Bottom" TextWrapping="Wrap" Margin="15,0,15,6" Padding="6" Height="44" />
-        <GroupBox Grid.Column="1" Grid.Row="1" Header="Log" HorizontalAlignment="Stretch" Name="groupBox1" VerticalAlignment="Stretch">
+        <TextBlock HorizontalAlignment="Stretch" Text="Drag and drop files and/or folders into the window." VerticalAlignment="Bottom" TextWrapping="Wrap" Margin="15,0,15,6" Padding="6" Height="44" />
+        <GroupBox Grid.Column="1" Grid.Row="1" Header="Log" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Grid>
                 <ListBox HorizontalAlignment="Stretch" Name="log" VerticalAlignment="Stretch" FontFamily="Consolas" FontSize="11" />
             </Grid>
