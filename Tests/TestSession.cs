@@ -55,7 +55,7 @@ namespace Tests {
 				return false;
 			}
 
-			var duplicates = _registry.SessionDuplicates().ToList();
+			var duplicates = _registry.FindDuplicates().ToList();
 			if (duplicates.Count > 0) {
 				_logger.Warn("There were some duplicate assemblies found.  Only the first one was tested.");
 
@@ -125,15 +125,17 @@ namespace Tests {
 			Debug.Assert(path != null);
 
 			var runner = CreateRunner(path);
-			if (runner != null && _registry.RegisterSession(runner.ManifestGuid)) {
+			if (runner != null && !_registry.Known(runner.ManifestGuid)) {
 				// Registry session uniques with global registry; halt tests if
 				// UUID is known
-				if (!_registry.RegisterGlobally(runner.AssemblyGuid)) {
-					var shared = _registry.GlobalDuplicates(runner.AssemblyGuid.Guid)
+				if (_registry.Known(runner.AssemblyGuid, true)) {
+					var shared = _registry.FindDuplicates(runner.AssemblyGuid.Guid, true)
 						.First()
 						.Select(x => x.Path)
+						.Distinct()
 						.Aggregate((cur, next) => cur + ", " + next);
 
+					_logger.Error("Duplicate assembly GUID for {0}", path);
 					_logger.Error("Assembly GUID is shared by: {0}", shared);
 					return false;
 				}
@@ -153,7 +155,7 @@ namespace Tests {
 		}
 
 		/// <summary>
-		/// Instantiate <see cref="TestRunner"/> in <c>_appDomain</c>.
+		/// Instantiate <see cref="TestRunner"/> in the session's AppDomain
 		/// </summary>
 		/// <param name="path">path to assembly to test</param>
 		/// <returns>instante of <see cref="TestRunner"/>; null if instantiation failed</returns>

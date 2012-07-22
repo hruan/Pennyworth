@@ -19,44 +19,66 @@ namespace Tests {
 			_sessionRegistry = new List<GuidInfo>();
 		}
 
-		public Boolean RegisterSession(GuidInfo info) {
-			Debug.Assert(_sessionRegistry != null);
+		/// <summary>
+		/// Check if <paramref name="value"/> is known in registry
+		/// </summary>
+		/// <param name="value">value to check</param>
+		/// <param name="globally">whether to check the global registry</param>
+		/// <returns>
+		/// <c>true</c> if <paramref name="value"/> is known; <c>false</c>
+		/// otherwise
+		/// </returns>
+		public Boolean Known(GuidInfo value, Boolean globally = false) {
+			if (value.Guid == Guid.Empty) return false;
 
-			var known = Exists(_sessionRegistry, info);
-			_sessionRegistry.Add(info);
+			var registry = globally ? _globalRegistry : _sessionRegistry;
+			var idx      = Find(registry, value);
 
-			return !known;
+			registry.Add(value);
+
+			if (!globally) return idx >= 0;
+			return idx >= 0 && registry.Where(x => x.Guid == value.Guid)
+				                   .Any(x => !x.Path.Equals(value.Path,
+				                                            StringComparison.OrdinalIgnoreCase));
 		}
 
-		public Boolean RegisterGlobally(GuidInfo info) {
-			if (info.Guid == Guid.Empty) return true;
-
-			var idx = Find(_globalRegistry, info);
-
-			_globalRegistry.Add(info);
-			return idx < 0 || _globalRegistry[idx].Path.Equals(info.Path,
-			                                                   StringComparison.OrdinalIgnoreCase);
+		/// <summary>
+		/// Find all duplicates in session registry
+		/// </summary>
+		/// <returns>found duplicates if any</returns>
+		public IEnumerable<IGrouping<Guid, GuidInfo>> FindDuplicates() {
+			return FindDuplicates(Guid.Empty);
 		}
 
-		public IEnumerable<IGrouping<Guid, GuidInfo>> SessionDuplicates() {
-			return Duplicates(_sessionRegistry);
+		/// <summary>
+		/// Find duplicates of given <paramref name="value"/>
+		/// </summary>
+		/// <param name="value">duplicates of given value</param>
+		/// <param name="globally">whether to search in the global registry</param>
+		/// <returns>found duplicates for given <paramref name="value"/></returns>
+		public IEnumerable<IGrouping<Guid, GuidInfo>> FindDuplicates(Guid value, Boolean globally = false) {
+			var registry = globally ? _globalRegistry : _sessionRegistry;
+			var dups = FindDuplicatesIn(registry);
+
+			return value == Guid.Empty ? dups : dups.Where(gi => gi.Key == value);
 		}
 
-		public IEnumerable<IGrouping<Guid, GuidInfo>> GlobalDuplicates(Guid guid) {
-			return Duplicates(_globalRegistry).Where(gi => gi.Key == guid);
-		}
-
-		private static IEnumerable<IGrouping<Guid, GuidInfo>> Duplicates(IEnumerable<GuidInfo> list) {
+		private static IEnumerable<IGrouping<Guid, GuidInfo>> FindDuplicatesIn(IEnumerable<GuidInfo> list) {
 			Debug.Assert(list != null);
 
 			var lookup = list.ToLookup(x => x.Guid);
 			return lookup.Where(x => lookup[x.Key].Count() > 1);
 		}
 
-		private static Boolean Exists(List<GuidInfo> haystack, GuidInfo needle) {
-			return Find(haystack, needle) >= 0;
-		}
-
+		/// <summary>
+		/// Search for <see cref="GuidInfo"/> within given list
+		/// </summary>
+		/// <param name="haystack">list within which to search for <paramref name="needle"/></param>
+		/// <param name="needle">item to search for</param>
+		/// <returns>
+		/// index for the <paramref name="needle"/> in <paramref name="haystack"/>;
+		/// less than zero if not found
+		/// </returns>
 		private static Int32 Find(List<GuidInfo> haystack, GuidInfo needle) {
 			haystack.Sort();
 			return haystack.BinarySearch(needle);
