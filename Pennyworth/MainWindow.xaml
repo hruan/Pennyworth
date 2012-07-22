@@ -1,7 +1,7 @@
-﻿<Window x:Class="Pennyworth.MainWindow"
+﻿<Window x:Name="clo" x:Class="Pennyworth.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Pennyworth" Height="480" Width="640" AllowDrop="True" Drop="Window_Drop" Icon="Images/Icon.ico">
+        Title="Pennyworth" Height="480" Width="640" AllowDrop="True" Drop="Window_Drop" Icon="Images/Icon.ico" Closing="Window_Closing">
     <!-- Icon from: http://www.iconfinder.com/icondetails/17844/128/assistant_butler_butterfly_smoking_icon -->
   <Grid>
         <Grid.RowDefinitions>
