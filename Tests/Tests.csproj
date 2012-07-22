@@ -45,7 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AbstractTest.cs" />
+    <Compile Include="Cases\AbstractTest.cs" />
     <Compile Include="AssemblyRegistry.cs" />
     <Compile Include="Cases\IndirectRecursiveCalls.cs" />
     <Compile Include="MethodCallHelper.cs" />

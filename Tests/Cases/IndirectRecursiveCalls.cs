@@ -8,7 +8,10 @@ namespace Tests.Cases {
             : base(assembly, path) {}
 
         public override Boolean Run() {
-            _faultyMembers.AddRange(new MethodCallHelper(_assembly).GetIndirectRecursiveCalls());
+	        var faults = new MethodCallHelper(Assembly).GetIndirectRecursiveCalls();
+			foreach (var fault in faults) {
+				FaultyMembers.Add(fault);
+			}
 
 	        return true;
         }

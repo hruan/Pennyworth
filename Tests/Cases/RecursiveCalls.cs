@@ -9,7 +9,10 @@ namespace Tests.Cases {
 
         public override Boolean Run() {
 			try {
-				_faultyMembers.AddRange(new MethodCallHelper(_assembly).GetRecursiveCalls());
+				var faults = new MethodCallHelper(Assembly).GetRecursiveCalls();
+				foreach (var fault in faults) {
+					FaultyMembers.Add(fault);
+				}
 			} catch (NotSupportedException) {
 				return false;
 			}

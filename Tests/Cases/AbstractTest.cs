@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 
-namespace Tests {
+namespace Tests.Cases {
     public abstract class AbstractTest {
-        protected readonly Assembly         _assembly;
-        protected readonly List<MemberInfo> _faultyMembers;
+        private readonly Assembly         _assembly;
+        private readonly List<MemberInfo> _faultyMembers;
 
         // Assemblies are shadow copied when loaded and we still need to tell the location
         // of the assembly being tested
@@ -17,6 +18,14 @@ namespace Tests {
             _faultyMembers = new List<MemberInfo>();
             _assemblyLocation = path;
         }
+
+	    protected Assembly Assembly {
+		    get { return _assembly; }
+	    }
+
+	    protected Collection<MemberInfo> FaultyMembers {
+		    get { return new Collection<MemberInfo>(_faultyMembers); }
+	    }
 
         /// <summary>
         /// Executes the test case, <see cref="_faultyMembers"/> gets populated
@@ -29,21 +38,21 @@ namespace Tests {
 		/// <returns><c>true</c> if tests ran successfully; <c>false</c> otherwise</returns>
         public abstract Boolean Run();
 
-        /// <summary>
-        /// Returns the faults detected by a test case
-        /// </summary>
-        /// <remarks>
-        /// As the results will move across AppDomains they need to serializable objects.
-        /// Assembly under test is only loaded in this AppDomain.
-        /// </remarks>
-        /// <seealso cref="Extensions.ToFaultInfo"/>.
-        public IEnumerable<FaultInfo> GetFaults() {
-            var caseName = Attribute.GetCustomAttribute(GetType(), typeof(TestCaseAttribute)) as TestCaseAttribute;
+	    /// <summary>
+	    /// Returns the faults detected by a test case
+	    /// </summary>
+	    /// <remarks>
+	    /// As the results will move across AppDomains they need to serializable objects.
+	    /// Assembly under test is only loaded in this AppDomain.
+	    /// </remarks>
+	    /// <seealso cref="Extensions.ToFaultInfo"/>.
+	    public IEnumerable<FaultInfo> GetFaults() {
+		    var caseName = Attribute.GetCustomAttribute(GetType(), typeof(TestCaseAttribute)) as TestCaseAttribute;
 
-            return _faultyMembers.ToFaultInfo(caseName != null ? caseName.Name : String.Empty, _assemblyLocation);
-        }
+		    return _faultyMembers.ToFaultInfo(caseName != null ? caseName.Name : String.Empty, _assemblyLocation);
+	    }
 
-        /// <summary>
+	    /// <summary>
         /// Whether the test case found any faults
         /// </summary>
         public Boolean HasFaults {
