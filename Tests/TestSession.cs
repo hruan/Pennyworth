@@ -20,15 +20,17 @@ namespace Tests {
 
 		private readonly String           _basePath;
 		private readonly List<FaultInfo>  _faults;
-		private readonly AssemblyRegistry _assemblyRegistry;
+		private readonly AssemblyRegistry _registry;
 		private readonly Logger           _logger;
 
-		public TestSession(string basePath) {
+		public TestSession(String basePath, AssemblyRegistry registry) {
 			Debug.Assert(!String.IsNullOrEmpty(basePath));
 
 			_faults = new List<FaultInfo>();
 			_logger = LogManager.GetLogger(GetType().Name);
-			_assemblyRegistry = new AssemblyRegistry();
+
+			registry.NewSession();
+			_registry = registry;
 
 			var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
 							   + Path.DirectorySeparatorChar + "Cache";
@@ -53,7 +55,7 @@ namespace Tests {
 				return false;
 			}
 
-			var duplicates = _assemblyRegistry.Duplicates().ToList();
+			var duplicates = _registry.SessionDuplicates().ToList();
 			if (duplicates.Count > 0) {
 				_logger.Warn("There were some duplicate assemblies found.  Only the first one was tested.");
 
@@ -102,8 +104,9 @@ namespace Tests {
 		/// <param name="duplicates">paths to duplicates</param>
 		/// <param name="basePath">the <c>_basePath</c> as an URI</param>
 		/// <returns></returns>
-		private IEnumerable<String> DuplicatesRelativeLocation(IEnumerable<String> duplicates, Uri basePath) {
-			return duplicates.Select(x => basePath.MakeRelativeUri(new Uri(x)).ToString())
+		private static IEnumerable<String> DuplicatesRelativeLocation(IEnumerable<String> duplicates, Uri basePath) {
+			return duplicates.Distinct()
+				.Select(x => basePath.MakeRelativeUri(new Uri(x)).ToString())
 				.Select(x => Uri.UnescapeDataString(x)
 								.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
 		}
@@ -121,21 +124,21 @@ namespace Tests {
 		private Boolean PerformTestsOn(String path) {
 			Debug.Assert(path != null);
 
-			TestRunner runner = null;
-			try {
-				runner = (TestRunner) _appDomain.CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
-				                                                             typeof(TestRunner).FullName,
-				                                                             ignoreCase: false,
-				                                                             bindingAttr: BindingFlags.Default,
-				                                                             binder: null,
-				                                                             args: new Object[] { path },
-				                                                             culture: null,
-				                                                             activationAttributes: null);
-			} catch (TargetInvocationException ex) {
-				_logger.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
-			}
+			var runner = CreateRunner(path);
+			if (runner != null && _registry.RegisterSession(runner.ManifestGuid)) {
+				// Registry session uniques with global registry; halt tests if
+				// UUID is known
+				if (!_registry.RegisterGlobally(runner.AssemblyGuid)) {
+					var shared = _registry.GlobalDuplicates(runner.AssemblyGuid.Guid)
+						.First()
+						.Select(x => x.Path)
+						.Aggregate((cur, next) => cur + ", " + next);
 
-			if (runner != null && _assemblyRegistry.Register(runner.AssemblyInfo)) {
+					_logger.Error("Assembly GUID is shared by: {0}", shared);
+					return false;
+				}
+
+				// Finally run the tests
 				_logger.Info("Testing {0}", path);
 				var testsRan = runner.RunTests();
 				if (testsRan && runner.HasFaults) {
@@ -147,6 +150,31 @@ namespace Tests {
 			}
 
 			return true;
+		}
+
+		/// <summary>
+		/// Instantiate <see cref="TestRunner"/> in <c>_appDomain</c>.
+		/// </summary>
+		/// <param name="path">path to assembly to test</param>
+		/// <returns>instante of <see cref="TestRunner"/>; null if instantiation failed</returns>
+		private TestRunner CreateRunner(String path) {
+			TestRunner runner = null;
+
+			try {
+				runner = (TestRunner) _appDomain
+					                      .CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
+					                                                   typeof(TestRunner).FullName,
+					                                                   false,
+					                                                   BindingFlags.Default,
+					                                                   null,
+					                                                   new Object[] {path},
+					                                                   null,
+					                                                   null);
+			} catch (TargetInvocationException ex) {
+				_logger.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
+			}
+
+			return runner;
 		}
 	}
 

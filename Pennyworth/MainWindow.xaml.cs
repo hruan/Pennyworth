@@ -10,12 +10,12 @@ using Pennyworth.Helpers;
 using Tests;
 
 namespace Pennyworth {
-    public partial class MainWindow {
+    public sealed partial class MainWindow {
         private readonly BitmapImage _yayImage;
         private readonly BitmapImage _nayImage;
         private readonly Logger      _logger;
 
-        private readonly Logger _logger;
+	    private static readonly AssemblyRegistry _registry = RegistrySerializer.GetRegistry();
 
         public MainWindow() {
             InitializeComponent();
@@ -42,10 +42,10 @@ namespace Pennyworth {
                     .Select(p => new FileInfo(p))
                     .ToList();
                 var assemblies = DropHelper.GetAssembliesFromDropData(paths).ToList();
-                var basePath = DropHelper.GetBaseDir(paths);
+                var basePath   = DropHelper.GetBaseDir(paths);
 
                 if (assemblies.Any()) {
-                    using (var helper = new TestSession(basePath)) {
+                    using (var helper = new TestSession(basePath, _registry)) {
                         var testsRan = helper.RunTestsFor(assemblies);
 
                         imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
@@ -64,5 +64,11 @@ namespace Pennyworth {
                 log.ScrollIntoView(log.Items[last]);
             }
         }
+
+		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+			if (!RegistrySerializer.SaveRegistry()) {
+				MessageBox.Show("Oops, something went wrong went saving assembly registry. Oh, well!");
+			}
+		}
     }
 }
