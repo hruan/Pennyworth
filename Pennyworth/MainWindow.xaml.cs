@@ -10,65 +10,65 @@ using Pennyworth.Helpers;
 using Tests;
 
 namespace Pennyworth {
-    public sealed partial class MainWindow {
-        private readonly BitmapImage _yayImage;
-        private readonly BitmapImage _nayImage;
-        private readonly Logger      _logger;
+	public sealed partial class MainWindow {
+		private readonly BitmapImage _yayImage;
+		private readonly BitmapImage _nayImage;
+		private readonly Logger      _logger;
 
-	    private static readonly AssemblyRegistry _registry = RegistrySerializer.GetRegistry();
+		private static readonly AssemblyRegistry _registry = RegistrySerializer.GetRegistry();
 
-        public MainWindow() {
-            InitializeComponent();
+		public MainWindow() {
+			InitializeComponent();
 
-            _logger = LogManager.GetLogger(GetType().Name);
-            var target = LogManager.Configuration.AllTargets.FirstOrDefault() as NLog.Targets.MemoryTarget;
-            if (target != null) {
-                log.ItemsSource = target.Logs;
-            }
+			_logger = LogManager.GetLogger(GetType().Name);
+			var target = LogManager.Configuration.AllTargets.FirstOrDefault() as NLog.Targets.MemoryTarget;
+			if (target != null) {
+				log.ItemsSource = target.Logs;
+			}
 
-            // Icons from: http://www.iconfinder.com/browse/iconset/30_Free_Black_ToolBar_Icons/#readme
-            _yayImage = new BitmapImage(new Uri("/Images/Yay.png", UriKind.Relative));
-            _nayImage = new BitmapImage(new Uri("/Images/Nay.png", UriKind.Relative));
+			// Icons from: http://www.iconfinder.com/browse/iconset/30_Free_Black_ToolBar_Icons/#readme
+			_yayImage = new BitmapImage(new Uri("/Images/Yay.png", UriKind.Relative));
+			_nayImage = new BitmapImage(new Uri("/Images/Nay.png", UriKind.Relative));
 
-            versionLabel.Content = "Version: " + Assembly.GetExecutingAssembly().GetName().Version;
-        }
+			versionLabel.Content = "Version: " + Assembly.GetExecutingAssembly().GetName().Version;
+		}
 
-        private void Window_Drop(object sender, DragEventArgs e) {
-            imageResult.Source = null;
-            offendingMembers.ItemsSource = null;
+		private void Window_Drop(object sender, DragEventArgs e) {
+			imageResult.Source = null;
+			offendingMembers.ItemsSource = null;
 
-            if (e.Data.GetDataPresent("FileDrop")) {
-                var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
-                    .Select(p => new FileInfo(p))
-                    .ToList();
-                var assemblies = DropHelper.GetAssembliesFromDropData(paths).ToList();
-                var basePath   = DropHelper.GetBaseDir(paths);
+			if (e.Data.GetDataPresent("FileDrop")) {
+				var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
+					.Select(p => new FileInfo(p))
+					.ToList();
+				var assemblies = DropHelper.GetAssembliesFromDropData(paths).ToList();
+				var basePath   = DropHelper.GetBaseDir(paths);
 
-                if (assemblies.Any()) {
-                    using (var helper = new TestSession(basePath, _registry)) {
-                        var testsRan = helper.RunTestsFor(assemblies);
+				if (assemblies.Any()) {
+					using (var helper = new TestSession(basePath, _registry)) {
+						var testsRan = helper.RunTestsFor(assemblies);
 
-                        imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
-                        offendingMembers.ItemsSource = helper.Faults;
-                    }
-                } else {
-                    _logger.Info("No assemblies found among dropped files.");
-                }
-            } else {
-                _logger.Info("No files found among dropped items.");
-            }
+						imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
+						offendingMembers.ItemsSource = helper.Faults;
+					}
+				} else {
+					_logger.Info("No assemblies found among dropped files.");
+				}
+			} else {
+				_logger.Info("No files found among dropped items.");
+			}
 
-            log.Items.Refresh();
-            if (log.HasItems) {
-                var last = log.Items.Count - 1;
-                log.ScrollIntoView(log.Items[last]);
-            }
-        }
+			log.Items.Refresh();
+			if (log.HasItems) {
+				var last = log.Items.Count - 1;
+				log.ScrollIntoView(log.Items[last]);
+			}
+		}
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
 			if (!RegistrySerializer.SaveRegistry()) {
 				MessageBox.Show("Oops, something went wrong went saving assembly registry. Oh, well!");
 			}
 		}
-    }
+	}
 }
