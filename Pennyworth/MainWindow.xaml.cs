@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using NLog;
 using Pennyworth.Helpers;
@@ -46,7 +47,7 @@ namespace Pennyworth {
 
 				if (assemblies.Any()) {
 					using (var helper = new TestSession(basePath, _registry)) {
-						var testsRan = helper.RunTestsFor(assemblies);
+						var testsRan = helper.RunTestsFor(assemblies, checkAssemblyGuid.IsChecked ?? false);
 
 						imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
 						offendingMembers.ItemsSource = helper.Faults;
@@ -69,6 +70,16 @@ namespace Pennyworth {
 			if (!RegistrySerializer.SaveRegistry()) {
 				MessageBox.Show("Oops, something went wrong went saving assembly registry. Oh, well!");
 			}
+		}
+
+		private void checkAssemblyGuid_Checked(object sender, RoutedEventArgs e) {
+			BorderBrush = Brushes.Transparent;
+			BorderThickness = new Thickness(0);
+		}
+
+		private void checkAssemblyGuid_Unchecked(object sender, RoutedEventArgs e) {
+			BorderBrush = Brushes.Red;
+			BorderThickness = new Thickness(2);
 		}
 	}
 }

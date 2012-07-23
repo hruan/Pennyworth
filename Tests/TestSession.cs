@@ -46,11 +46,12 @@ namespace Tests {
 		/// supplied.
 		/// </summary>
 		/// <param name="assemblies">paths to assemblies to test</param>
+		/// <param name="checkAssemblyGuid">whether to check assembly's GUID against known values</param>
 		/// <returns>true if all tests suceeded; false otherwise</returns>
-		public Boolean RunTestsFor(IEnumerable<String> assemblies) {
+		public Boolean RunTestsFor(IEnumerable<String> assemblies, Boolean checkAssemblyGuid) {
 			Debug.Assert(assemblies != null);
 
-			if (assemblies.Any(path => !PerformTestsOn(path))) {
+			if (assemblies.Any(path => !PerformTestsOn(path, checkAssemblyGuid))) {
 				_logger.Error("Halting tests.");
 				return false;
 			}
@@ -116,19 +117,20 @@ namespace Tests {
 		/// it to test an assembly.
 		/// </summary>
 		/// <param name="path">path to assembly to test</param>
+		/// <param name="checkAssemblyGuid">whether check assembly's GUID against known values</param>
 		/// <returns>true if tests were performed correctly; false otherwise</returns>
 		/// <remarks>
 		/// Return value depends on whether tests were executed correctly and
 		/// does not reflect whether any faults were detected.
 		/// </remarks>
-		private Boolean PerformTestsOn(String path) {
+		private Boolean PerformTestsOn(String path, Boolean checkAssemblyGuid) {
 			Debug.Assert(path != null);
 
 			var runner = CreateRunner(path);
 			if (runner != null && !_registry.Known(runner.ManifestGuid)) {
 				// Registry session uniques with global registry; halt tests if
 				// UUID is known
-				if (_registry.Known(runner.AssemblyGuid, true)) {
+				if (checkAssemblyGuid && _registry.Known(runner.AssemblyGuid, true)) {
 					var shared = _registry.FindDuplicates(runner.AssemblyGuid.Guid, true)
 						.First()
 						.Select(x => x.Path)
