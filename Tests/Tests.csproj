@@ -38,6 +38,9 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Reactive">
+      <HintPath>..\packages\Rx-Main.1.0.11226\lib\Net4\System.Reactive.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -54,6 +57,7 @@
     <Compile Include="Cases\RecursiveCalls.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="TestSession.cs" />
+    <Compile Include="TestSessionManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

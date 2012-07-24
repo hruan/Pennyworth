@@ -16,7 +16,8 @@ namespace Pennyworth {
 		private readonly BitmapImage _nayImage;
 		private readonly Logger      _logger;
 
-		private static readonly AssemblyRegistry _registry = RegistrySerializer.GetRegistry();
+		private static readonly TestSessionManager _sessionManager = new TestSessionManager();
+		// private static readonly AssemblyRegistry   _registry       = RegistrySerializer.GetRegistry();
 
 		public MainWindow() {
 			InitializeComponent();
@@ -46,11 +47,8 @@ namespace Pennyworth {
 				var basePath   = DropHelper.GetBaseDir(paths);
 
 				if (assemblies.Any()) {
-					using (var helper = new TestSession(basePath, _registry)) {
-						var testsRan = helper.RunTestsFor(assemblies, checkAssemblyGuid.IsChecked ?? false);
-
-						imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
-						offendingMembers.ItemsSource = helper.Faults;
+					using (var session = _sessionManager.CreateSession()) {
+						assemblies.ForEach(x => _sessionManager.Assemblies.Add(x));
 					}
 				} else {
 					_logger.Info("No assemblies found among dropped files.");
