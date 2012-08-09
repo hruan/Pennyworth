@@ -116,9 +116,9 @@
     <Resource Include="Images\Yay.png" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Tests\Tests.csproj">
+    <ProjectReference Include="..\Pennyworth.Inspection\Pennyworth.Inspection.csproj">
       <Project>{A872DFFF-0A98-47E9-9B6E-F09A774A3E4E}</Project>
-      <Name>Tests</Name>
+      <Name>Pennyworth.Inspection</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

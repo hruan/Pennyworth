@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using NLog;
-using Tests;
+using Pennyworth.Inspection;
 
 namespace Pennyworth.Helpers {
 	/// <summary>
@@ -22,7 +22,7 @@ namespace Pennyworth.Helpers {
 
 			try {
 				_registry = SerializationHelper.Deserialize<AssemblyRegistry>(AssemblyRegistryPath,
-				                                                             SerializationType.Binary);
+				                                                              SerializationType.Binary);
 			} catch (IOException ex) {
 				_logger.Warn("Exception while loading assembly registry: {0}", ex.Message);
 			} finally {

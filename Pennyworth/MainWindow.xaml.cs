@@ -8,7 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using NLog;
 using Pennyworth.Helpers;
-using Tests;
+using Pennyworth.Inspection;
 
 namespace Pennyworth {
 	public sealed partial class MainWindow {
@@ -46,7 +46,7 @@ namespace Pennyworth {
 				var basePath   = DropHelper.GetBaseDir(paths);
 
 				if (assemblies.Any()) {
-					using (var helper = new TestSession(basePath, _registry)) {
+					using (var helper = new Session(basePath, _registry)) {
 						var testsRan = helper.RunTestsFor(assemblies, checkAssemblyGuid.IsChecked ?? false);
 
 						imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;

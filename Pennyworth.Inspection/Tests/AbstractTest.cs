@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 
-namespace Tests.Cases {
+namespace Pennyworth.Inspection.Tests {
 	public abstract class AbstractTest {
 		private readonly Assembly         _assembly;
 		private readonly List<MemberInfo> _faultyMembers;
@@ -14,8 +14,8 @@ namespace Tests.Cases {
 		private readonly String _assemblyLocation;
 
 		protected AbstractTest(Assembly assembly, String path) {
-			_assembly = assembly;
-			_faultyMembers = new List<MemberInfo>();
+			_assembly         = assembly;
+			_faultyMembers    = new List<MemberInfo>();
 			_assemblyLocation = path;
 		}
 
@@ -32,7 +32,7 @@ namespace Tests.Cases {
 		/// </summary>
 		/// <remarks>
 		/// Concrete test cases must make sure the populate <see cref="_faultyMembers"/> as
-		/// <see cref="TestRunner"/> calls <see cref="HasFaults"/> and <see cref="Faults"/>
+		/// <see cref="Runner"/> calls <see cref="HasFaults"/> and <see cref="Faults"/>
 		/// to query and retrieve the results respectively.
 		/// </remarks>
 		/// <returns><c>true</c> if tests ran successfully; <c>false</c> otherwise</returns>

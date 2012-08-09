@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Tests {
+namespace Pennyworth.Inspection {
 	[Serializable]
 	public sealed class AssemblyRegistry {
 		private readonly List<GuidInfo> _globalRegistry;

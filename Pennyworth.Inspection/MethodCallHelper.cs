@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using NLog;
 
-namespace Tests {
+namespace Pennyworth.Inspection {
     /// <summary>
     /// From the types in an assembly, get the methods and create caller-callee method pairs
     /// </summary>

@@ -6,16 +6,16 @@ using System.Linq;
 using System.Reflection;
 using NLog;
 
-namespace Tests {
+namespace Pennyworth.Inspection {
 	/// <summary>
 	/// A session consisting of a set of assemblies that need to be tested. Uses
-	/// <see cref="TestRunner"/> to test each assembly.
+	/// <see cref="Runner"/> to test each assembly.
 	/// </summary>
 	/// <remarks>
 	/// Assemblies are loaded into a separate AppDomain which is unloaded after all
 	/// tests have concluded.
 	/// </remarks>
-	public sealed class TestSession : IDisposable {
+	public sealed class Session : IDisposable {
 		private AppDomain _appDomain;
 
 		private readonly String           _basePath;
@@ -23,7 +23,7 @@ namespace Tests {
 		private readonly AssemblyRegistry _registry;
 		private readonly Logger           _logger;
 
-		public TestSession(String basePath, AssemblyRegistry registry) {
+		public Session(String basePath, AssemblyRegistry registry) {
 			Debug.Assert(!String.IsNullOrEmpty(basePath));
 
 			_faults = new List<FaultInfo>();
@@ -113,7 +113,7 @@ namespace Tests {
 		}
 
 		/// <summary>
-		/// Instantiate <see cref="TestRunner"/> in worker AppDomain and use
+		/// Instantiate <see cref="Runner"/> in worker AppDomain and use
 		/// it to test an assembly.
 		/// </summary>
 		/// <param name="path">path to assembly to test</param>
@@ -157,17 +157,17 @@ namespace Tests {
 		}
 
 		/// <summary>
-		/// Instantiate <see cref="TestRunner"/> in the session's AppDomain
+		/// Instantiate <see cref="Runner"/> in the session's AppDomain
 		/// </summary>
 		/// <param name="path">path to assembly to test</param>
-		/// <returns>instante of <see cref="TestRunner"/>; null if instantiation failed</returns>
-		private TestRunner CreateRunner(String path) {
-			TestRunner runner = null;
+		/// <returns>instante of <see cref="Runner"/>; null if instantiation failed</returns>
+		private Runner CreateRunner(String path) {
+			Runner runner = null;
 
 			try {
-				runner = (TestRunner) _appDomain
+				runner = (Runner) _appDomain
 					                      .CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
-					                                                   typeof(TestRunner).FullName,
+					                                                   typeof(Runner).FullName,
 					                                                   false,
 					                                                   BindingFlags.Default,
 					                                                   null,
