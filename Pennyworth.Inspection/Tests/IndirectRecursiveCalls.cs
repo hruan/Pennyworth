@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 
-namespace Tests.Cases {
+namespace Pennyworth.Inspection.Tests {
 	[TestCase("Indirect recursion")]
 	public sealed class IndirectRecursiveCalls : AbstractTest {
 		public IndirectRecursiveCalls(Assembly assembly, string path)

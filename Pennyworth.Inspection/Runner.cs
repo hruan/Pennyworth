@@ -5,9 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Tests.Cases;
+using Pennyworth.Inspection.Tests;
 
-namespace Tests {
+namespace Pennyworth.Inspection {
 	/// <summary>
 	/// Deals test case discovery through reflection, test execution and gathering
 	/// results from executed tests.
@@ -15,7 +15,7 @@ namespace Tests {
 	/// <remarks>
 	/// Can be controlled across AppDomains.
 	/// </remarks>
-	public sealed class TestRunner : MarshalByRefObject {
+	public sealed class Runner : MarshalByRefObject {
 		private readonly Assembly           _assembly;
 		private readonly String             _path;
 		private readonly List<AbstractTest> _preparedTests;
@@ -25,7 +25,7 @@ namespace Tests {
 		/// <summary>
 		/// Find tests through reflection when type is loaded
 		/// </summary>
-		static TestRunner() {
+		static Runner() {
 			var baseType = typeof(AbstractTest);
 
 			_testCases = Assembly.GetExecutingAssembly()
@@ -43,7 +43,7 @@ namespace Tests {
 		/// only run if registration succeeds.
 		/// </summary>
 		/// <param name="path">path to the assembly to test</param>
-		public TestRunner(String path) {
+		public Runner(String path) {
 			try {
 				_path          = path;
 				_assembly      = Assembly.LoadFile(path);
@@ -78,26 +78,13 @@ namespace Tests {
 				       : Enumerable.Empty<FaultInfo>().ToList();
 		}
 
-		/// <summary>
-		/// Grab the manifest UUID and path for the assembly
-		/// </summary>
-		public GuidInfo ManifestGuid {
-			get {
-				return new GuidInfo {
-					Guid = _assembly.ManifestModule.ModuleVersionId,
-					Path = _path
-				};
-			}
-		}
-
-		/// <summary>
-		/// Grab assembly UUID if defined and the path of the assembly
-		/// </summary>
-		public GuidInfo AssemblyGuid {
+		public AssemblyInfo AssemblyInfo {
 			get {
 				var attr = Attribute.GetCustomAttribute(_assembly, typeof(GuidAttribute)) as GuidAttribute;
-				return new GuidInfo {
-					Guid = attr != null ? new Guid(attr.Value) : Guid.Empty,
+
+				return new AssemblyInfo {
+					AssemblyId = _assembly.ManifestModule.ModuleVersionId,
+					AssemblyGuid = attr != null ? new Guid(attr.Value) : Guid.Empty,
 					Path = _path
 				};
 			}

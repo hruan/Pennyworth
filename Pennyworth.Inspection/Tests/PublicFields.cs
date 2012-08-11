@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace Tests.Cases {
+namespace Pennyworth.Inspection.Tests {
 	[TestCase("Public field")]
 	public sealed class PublicFields : AbstractTest {
 		public PublicFields(Assembly assembly, String path)
