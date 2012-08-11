@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using NLog;
 
 namespace Pennyworth.Inspection {
@@ -20,63 +21,66 @@ namespace Pennyworth.Inspection {
 
 		private readonly String           _basePath;
 		private readonly List<FaultInfo>  _faults;
-		private readonly AssemblyRegistry _registry;
-		private readonly Logger           _logger;
+		private readonly Logger           _log;
+		private readonly List<RunnerInfo> _runners;
 
-		public Session(String basePath, AssemblyRegistry registry) {
+		public Session(String basePath) {
 			Debug.Assert(!String.IsNullOrEmpty(basePath));
 
-			_faults = new List<FaultInfo>();
-			_logger = LogManager.GetLogger(GetType().Name);
-
-			registry.NewSession();
-			_registry = registry;
+			_basePath = basePath;
+			_runners  = new List<RunnerInfo>();
+			_faults   = new List<FaultInfo>();
+			_log      = LogManager.GetLogger(GetType().Name);
 
 			var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
 							   + Path.DirectorySeparatorChar + "Cache";
 
-			_basePath = basePath;
 			CreateWorkerDomain(Path.GetDirectoryName(_basePath), cacheDirPath);
 		}
 
-		public IEnumerable<FaultInfo> Faults { get { return _faults; } }
-
-		/// <summary>
-		/// Prepare and executes tests for each assemblies whose path is
-		/// supplied.
-		/// </summary>
-		/// <param name="assemblies">paths to assemblies to test</param>
-		/// <param name="checkAssemblyGuid">whether to check assembly's GUID against known values</param>
-		/// <returns>true if all tests suceeded; false otherwise</returns>
-		public Boolean RunTestsFor(IEnumerable<String> assemblies, Boolean checkAssemblyGuid) {
+		public void Add(IEnumerable<String> assemblies) {
 			Debug.Assert(assemblies != null);
 
-			if (assemblies.Any(path => !PerformTestsOn(path, checkAssemblyGuid))) {
-				_logger.Error("Halting tests.");
-				return false;
+			foreach (var assembly in assemblies) {
+				var runner = CreateRunner(assembly);
+				_runners.Add(new RunnerInfo {
+					AssemblyInfo = runner.AssemblyInfo,
+					Runner       = runner
+				});
 			}
-
-			var duplicates = _registry.FindDuplicates().ToList();
-			if (duplicates.Count > 0) {
-				_logger.Warn("There were some duplicate assemblies found.  Only the first one was tested.");
-
-				var rpaths = duplicates.Select(dup => dup.Select(x => x.Path))
-					.Select(path => DuplicatesRelativeLocation(path, new Uri(_basePath)));
-				foreach (var paths in rpaths) {
-					_logger.Warn("{0} are duplicates", paths.Aggregate((cur, next) => cur + ", " + next));
-				}
-			}
-
-			return true;
 		}
 
-		/// <summary>
-		/// Unload worker AppDomain when disposed
-		/// </summary>
+		public Boolean Remove(IEnumerable<AssemblyInfo> assemblies) {
+			Debug.Assert(assemblies != null);
+
+			var dupes = assemblies.Select(assembly =>
+				_runners.First(x =>
+					x.AssemblyInfo.Path.Equals(assembly.Path, StringComparison.OrdinalIgnoreCase)
+					&& x.AssemblyInfo.Equals(assembly)
+				)
+			);
+
+			return dupes.All(x => _runners.Remove(x));
+		}
+
+		public IEnumerable<FaultInfo> Inspect() {
+			var tasks = new List<Task<Boolean>>(_runners.Count);
+			tasks.AddRange(_runners.Select(x => Task.Factory.StartNew(() => x.Runner.RunTests())));
+			Task.WaitAll(tasks.Cast<Task>().ToArray());
+
+			_faults.AddRange(_runners.Where(r => r.Runner.HasFaults).SelectMany(x => x.Runner.GetFaults()));
+
+			return _faults;
+		}
+
+		public IEnumerable<AssemblyInfo> PreparedAssemblies {
+			get { return _runners.Select(x => x.AssemblyInfo); }
+		}
+
 		public void Dispose() {
 			if (_appDomain != null) {
 				AppDomain.Unload(_appDomain);
-				_logger.Debug("Worker domain unloaded.");
+				_log.Debug("Worker domain unloaded.");
 			}
 		}
 
@@ -96,64 +100,7 @@ namespace Pennyworth.Inspection {
 													DisallowCodeDownload = true,
 													ShadowCopyFiles = "true"
 												});
-			_logger.Debug("Created worker AppDomain.");
-		}
-
-		/// <summary>
-		/// Get paths to duplicates using relative path from <c>_basePath</c>
-		/// </summary>
-		/// <param name="duplicates">paths to duplicates</param>
-		/// <param name="basePath">the <c>_basePath</c> as an URI</param>
-		/// <returns></returns>
-		private static IEnumerable<String> DuplicatesRelativeLocation(IEnumerable<String> duplicates, Uri basePath) {
-			return duplicates.Distinct()
-				.Select(x => basePath.MakeRelativeUri(new Uri(x)).ToString())
-				.Select(x => Uri.UnescapeDataString(x)
-								.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
-		}
-
-		/// <summary>
-		/// Instantiate <see cref="Runner"/> in worker AppDomain and use
-		/// it to test an assembly.
-		/// </summary>
-		/// <param name="path">path to assembly to test</param>
-		/// <param name="checkAssemblyGuid">whether check assembly's GUID against known values</param>
-		/// <returns>true if tests were performed correctly; false otherwise</returns>
-		/// <remarks>
-		/// Return value depends on whether tests were executed correctly and
-		/// does not reflect whether any faults were detected.
-		/// </remarks>
-		private Boolean PerformTestsOn(String path, Boolean checkAssemblyGuid) {
-			Debug.Assert(path != null);
-
-			var runner = CreateRunner(path);
-			if (runner != null && !_registry.Known(runner.ManifestGuid)) {
-				// Registry session uniques with global registry; halt tests if
-				// UUID is known
-				if (checkAssemblyGuid && _registry.Known(runner.AssemblyGuid, true)) {
-					var shared = _registry.FindDuplicates(runner.AssemblyGuid.Guid, true)
-						.First()
-						.Select(x => x.Path)
-						.Distinct()
-						.Aggregate((cur, next) => cur + ", " + next);
-
-					_logger.Error("Duplicate assembly GUID for {0}", path);
-					_logger.Error("Assembly GUID is shared by: {0}", shared);
-					return false;
-				}
-
-				// Finally run the tests
-				_logger.Info("Testing {0}", path);
-				var testsRan = runner.RunTests();
-				if (testsRan && runner.HasFaults) {
-					_faults.AddRange(runner.GetFaults());
-				} else if (!testsRan) {
-					_logger.Error("Some tests failed to run, see log file for details.");
-					return false;
-				}
-			}
-
-			return true;
+			_log.Debug("Created worker AppDomain.");
 		}
 
 		/// <summary>
@@ -175,11 +122,17 @@ namespace Pennyworth.Inspection {
 					                                                   null,
 					                                                   null);
 			} catch (TargetInvocationException ex) {
-				_logger.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
+				_log.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
 			}
 
 			return runner;
 		}
+	}
+
+	[Serializable]
+	public struct RunnerInfo {
+		public AssemblyInfo AssemblyInfo { get; set; }
+		public Runner Runner { get; set; }
 	}
 
 	/// <summary>

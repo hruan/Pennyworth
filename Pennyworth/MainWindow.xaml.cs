@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using NLog;
 using Pennyworth.Helpers;
@@ -15,8 +14,6 @@ namespace Pennyworth {
 		private readonly BitmapImage _yayImage;
 		private readonly BitmapImage _nayImage;
 		private readonly Logger      _logger;
-
-		private static readonly AssemblyRegistry _registry = RegistrySerializer.GetRegistry();
 
 		public MainWindow() {
 			InitializeComponent();
@@ -36,7 +33,6 @@ namespace Pennyworth {
 
 		private void Window_Drop(object sender, DragEventArgs e) {
 			imageResult.Source = null;
-			offendingMembers.ItemsSource = null;
 
 			if (e.Data.GetDataPresent("FileDrop")) {
 				var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
@@ -46,11 +42,13 @@ namespace Pennyworth {
 				var basePath   = DropHelper.GetBaseDir(paths);
 
 				if (assemblies.Any()) {
-					using (var helper = new Session(basePath, _registry)) {
-						var testsRan = helper.RunTestsFor(assemblies, checkAssemblyGuid.IsChecked ?? false);
+					var sm = new SessionManager();
+					faults.ItemsSource = sm.Faults;
+					using (var session = sm.CreateSession(basePath)) {
+						sm.Add(assemblies);
+						var hasFaults = sm.RunTests();
 
-						imageResult.Source = testsRan && !helper.Faults.Any() ? _yayImage : _nayImage;
-						offendingMembers.ItemsSource = helper.Faults;
+						imageResult.Source = hasFaults ? _nayImage : _yayImage;
 					}
 				} else {
 					_logger.Info("No assemblies found among dropped files.");
@@ -64,22 +62,6 @@ namespace Pennyworth {
 				var last = log.Items.Count - 1;
 				log.ScrollIntoView(log.Items[last]);
 			}
-		}
-
-		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
-			if (!RegistrySerializer.SaveRegistry()) {
-				MessageBox.Show("Oops, something went wrong went saving assembly registry. Oh, well!");
-			}
-		}
-
-		private void checkAssemblyGuid_Checked(object sender, RoutedEventArgs e) {
-			BorderBrush = Brushes.Transparent;
-			BorderThickness = new Thickness(0);
-		}
-
-		private void checkAssemblyGuid_Unchecked(object sender, RoutedEventArgs e) {
-			BorderBrush = Brushes.Red;
-			BorderThickness = new Thickness(2);
 		}
 	}
 }

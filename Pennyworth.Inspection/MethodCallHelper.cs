@@ -44,7 +44,6 @@ namespace Pennyworth.Inspection {
 
             _assembly = assembly;
             _methodILBytes = assembly.GetTypes()
-                .AsParallel()
                 .SelectMany(t => t.GetMethods(BindingFlags.Instance
                                               | BindingFlags.NonPublic
                                               | BindingFlags.Public
@@ -65,10 +64,9 @@ namespace Pennyworth.Inspection {
         /// </summary>
         /// <returns>recursive methods as <see cref="IEnumerable{T}">IEnumerable</see> of MemberInfo</returns>
         internal IEnumerable<MemberInfo> GetRecursiveCalls() {
-            return _calls.AsParallel()
-                .Where(x => x.Item1 == x.Item2)
-                .Distinct()
-                .Select(x => x.Item1);
+	        return _calls.Where(x => x.Item1 == x.Item2)
+		        .Distinct()
+		        .Select(x => x.Item1);
         }
 
         /// <summary>
@@ -76,10 +74,9 @@ namespace Pennyworth.Inspection {
         /// </summary>
         /// <returns>indirect methods as <see cref="IEnumerable{T}">IEnumerable</see> of MethodInfo</returns>
         internal IEnumerable<MethodInfo> GetIndirectRecursiveCalls() {
-            return _calls.AsParallel()
-                .Where(pair => _callsLookup[pair.Item2].Any(x => x != pair.Item2 && x == pair.Item1))
-                .Distinct()
-                .Select(x => x.Item1);
+	        return _calls.Where(pair => _callsLookup[pair.Item2].Any(x => x != pair.Item2 && x == pair.Item1))
+		        .Distinct()
+		        .Select(x => x.Item1);
         }
 
         /// <summary>

@@ -46,7 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Tests\AbstractTest.cs" />
-    <Compile Include="AssemblyRegistry.cs" />
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Tests\IndirectRecursiveCalls.cs" />
     <Compile Include="MethodCallHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -54,6 +54,7 @@
     <Compile Include="Tests\RecursiveCalls.cs" />
     <Compile Include="Runner.cs" />
     <Compile Include="Session.cs" />
+    <Compile Include="SessionManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

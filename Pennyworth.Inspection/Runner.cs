@@ -78,26 +78,13 @@ namespace Pennyworth.Inspection {
 				       : Enumerable.Empty<FaultInfo>().ToList();
 		}
 
-		/// <summary>
-		/// Grab the manifest UUID and path for the assembly
-		/// </summary>
-		public GuidInfo ManifestGuid {
-			get {
-				return new GuidInfo {
-					Guid = _assembly.ManifestModule.ModuleVersionId,
-					Path = _path
-				};
-			}
-		}
-
-		/// <summary>
-		/// Grab assembly UUID if defined and the path of the assembly
-		/// </summary>
-		public GuidInfo AssemblyGuid {
+		public AssemblyInfo AssemblyInfo {
 			get {
 				var attr = Attribute.GetCustomAttribute(_assembly, typeof(GuidAttribute)) as GuidAttribute;
-				return new GuidInfo {
-					Guid = attr != null ? new Guid(attr.Value) : Guid.Empty,
+
+				return new AssemblyInfo {
+					AssemblyId = _assembly.ManifestModule.ModuleVersionId,
+					AssemblyGuid = attr != null ? new Guid(attr.Value) : Guid.Empty,
 					Path = _path
 				};
 			}

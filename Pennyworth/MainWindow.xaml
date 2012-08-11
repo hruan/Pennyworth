@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Pennyworth.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Pennyworth" Height="480" Width="640" AllowDrop="True" Drop="Window_Drop" Icon="Images/Icon.ico" Closing="Window_Closing">
+        Title="Pennyworth" Height="480" Width="640" AllowDrop="True" Drop="Window_Drop" Icon="Images/Icon.ico">
     <!-- Icon from: http://www.iconfinder.com/icondetails/17844/128/assistant_butler_butterfly_smoking_icon -->
   <Grid>
         <Grid.RowDefinitions>
@@ -23,7 +23,7 @@
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
 
-                <ListView HorizontalAlignment="Stretch" Name="offendingMembers" VerticalAlignment="Stretch">
+                <ListView HorizontalAlignment="Stretch" Name="faults" VerticalAlignment="Stretch">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="Fault type" DisplayMemberBinding="{Binding Path=FaultType}"/>
@@ -43,6 +43,5 @@
             </Grid>
         </GroupBox>
         <Label Content="Unknown" Grid.Row="1" HorizontalAlignment="Stretch" Name="versionLabel" VerticalAlignment="Bottom" Foreground="DarkGray" FontSize="10" />
-        <CheckBox x:Name="checkAssemblyGuid" Content="Check assembly GUID" Grid.Row="1" Margin="6" VerticalAlignment="Top" IsChecked="True" Checked="checkAssemblyGuid_Checked" Unchecked="checkAssemblyGuid_Unchecked"/>
     </Grid>
 </Window>
