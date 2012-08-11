@@ -63,21 +63,5 @@ namespace Pennyworth {
 				log.ScrollIntoView(log.Items[last]);
 			}
 		}
-
-		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
-			if (!RegistrySerializer.SaveRegistry()) {
-				MessageBox.Show("Oops, something went wrong went saving assembly registry. Oh, well!");
-			}
-		}
-
-		private void checkAssemblyGuid_Checked(object sender, RoutedEventArgs e) {
-			BorderBrush = Brushes.Transparent;
-			BorderThickness = new Thickness(0);
-		}
-
-		private void checkAssemblyGuid_Unchecked(object sender, RoutedEventArgs e) {
-			BorderBrush = Brushes.Red;
-			BorderThickness = new Thickness(2);
-		}
 	}
 }
