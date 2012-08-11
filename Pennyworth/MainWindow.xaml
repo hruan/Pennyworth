@@ -23,7 +23,7 @@
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
 
-                <ListView HorizontalAlignment="Stretch" Name="offendingMembers" VerticalAlignment="Stretch">
+                <ListView HorizontalAlignment="Stretch" Name="faults" VerticalAlignment="Stretch">
                     <ListView.View>
                         <GridView>
                             <GridViewColumn Header="Fault type" DisplayMemberBinding="{Binding Path=FaultType}"/>
