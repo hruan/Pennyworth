@@ -4,11 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using NLog;
 using Pennyworth.Helpers;
-using Tests;
+using Pennyworth.Inspection;
 
 namespace Pennyworth {
 	public sealed partial class MainWindow {
