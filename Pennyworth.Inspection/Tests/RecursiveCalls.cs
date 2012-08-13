@@ -3,15 +3,15 @@ using System.Reflection;
 
 namespace Pennyworth.Inspection.Tests {
 	[TestCase("Recursion")]
-	public sealed class RecursiveCalls : AbstractTest {
-		public RecursiveCalls(Assembly assembly, String path)
+	internal sealed class RecursiveCalls : AbstractTest {
+		internal RecursiveCalls(Assembly assembly, String path)
 			: base(assembly, path) { }
 
-		public override Boolean Run() {
+		internal override Boolean Run() {
 			try {
 				var faults = new MethodCallHelper(Assembly).GetRecursiveCalls();
 				foreach (var fault in faults) {
-					FaultyMembers.Add(fault);
+					Faults.Add(fault);
 				}
 			} catch (NotSupportedException) {
 				return false;

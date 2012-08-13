@@ -4,11 +4,11 @@ using System.Reflection;
 
 namespace Pennyworth.Inspection.Tests {
 	[TestCase("Public field")]
-	public sealed class PublicFields : AbstractTest {
-		public PublicFields(Assembly assembly, String path)
+	internal sealed class PublicFields : AbstractTest {
+		internal PublicFields(Assembly assembly, String path)
 			: base(assembly, path) {}
 
-		public override Boolean Run() {
+		internal override Boolean Run() {
 			var faults = Assembly.GetTypes()
 				.Where(t => !t.IsNested)
 				.SelectMany(t => t.GetFields(BindingFlags.Instance
@@ -18,7 +18,7 @@ namespace Pennyworth.Inspection.Tests {
 				.Where(fi => fi.DeclaringType != null
 							 && !fi.DeclaringType.IsEnum);
 			foreach (var fault in faults) {
-				FaultyMembers.Add(fault);
+				Faults.Add(fault);
 			}
 
 			return true;

@@ -5,9 +5,9 @@ using System.Linq;
 using System.Reflection;
 
 namespace Pennyworth.Inspection.Tests {
-	public abstract class AbstractTest {
+	internal abstract class AbstractTest {
 		private readonly Assembly         _assembly;
-		private readonly List<MemberInfo> _faultyMembers;
+		private readonly List<MemberInfo> _faults;
 
 		// Assemblies are shadow copied when loaded and we still need to tell the location
 		// of the assembly being tested
@@ -15,7 +15,7 @@ namespace Pennyworth.Inspection.Tests {
 
 		protected AbstractTest(Assembly assembly, String path) {
 			_assembly         = assembly;
-			_faultyMembers    = new List<MemberInfo>();
+			_faults           = new List<MemberInfo>();
 			_assemblyLocation = path;
 		}
 
@@ -23,20 +23,20 @@ namespace Pennyworth.Inspection.Tests {
 			get { return _assembly; }
 		}
 
-		protected Collection<MemberInfo> FaultyMembers {
-			get { return new Collection<MemberInfo>(_faultyMembers); }
+		protected List<MemberInfo> Faults {
+			get { return _faults; }
 		}
 
 		/// <summary>
-		/// Executes the test case, <see cref="_faultyMembers"/> gets populated
+		/// Executes the test case, <see cref="_faults"/> gets populated
 		/// </summary>
 		/// <remarks>
-		/// Concrete test cases must make sure the populate <see cref="_faultyMembers"/> as
+		/// Concrete test cases must make sure the populate <see cref="_faults"/> as
 		/// <see cref="Runner"/> calls <see cref="HasFaults"/> and <see cref="Faults"/>
 		/// to query and retrieve the results respectively.
 		/// </remarks>
 		/// <returns><c>true</c> if tests ran successfully; <c>false</c> otherwise</returns>
-		public abstract Boolean Run();
+		internal abstract Boolean Run();
 
 		/// <summary>
 		/// Returns the faults detected by a test case
@@ -46,17 +46,17 @@ namespace Pennyworth.Inspection.Tests {
 		/// Assembly under test is only loaded in this AppDomain.
 		/// </remarks>
 		/// <seealso cref="Extensions.ToFaultInfo"/>.
-		public IEnumerable<FaultInfo> GetFaults() {
+		internal IEnumerable<FaultInfo> GetFaults() {
 			var caseName = Attribute.GetCustomAttribute(GetType(), typeof(TestCaseAttribute)) as TestCaseAttribute;
 
-			return _faultyMembers.ToFaultInfo(caseName != null ? caseName.Name : String.Empty, _assemblyLocation);
+			return _faults.ToFaultInfo(caseName != null ? caseName.Name : String.Empty, _assemblyLocation);
 		}
 
 		/// <summary>
 		/// Whether the test case found any faults
 		/// </summary>
-		public Boolean HasFaults {
-			get { return _faultyMembers.Any(); }
+		internal Boolean HasFaults {
+			get { return _faults.Any(); }
 		}
 	}
 
@@ -65,7 +65,7 @@ namespace Pennyworth.Inspection.Tests {
 	/// </summary>
 	[Serializable]
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-	public sealed class TestCaseAttribute : Attribute {
+	internal sealed class TestCaseAttribute : Attribute {
 		private readonly String _name;
 
 		public String Name {

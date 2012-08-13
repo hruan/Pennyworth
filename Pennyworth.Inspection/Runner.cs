@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,8 +30,10 @@ namespace Pennyworth.Inspection {
 			var baseType = typeof(AbstractTest);
 
 			_testCases = Assembly.GetExecutingAssembly()
-				.GetExportedTypes()
-				.Where(t => t.IsClass
+				// Tests are internal -- can't use GetExportedTypes()
+				.GetTypes()
+				.Where(t => !t.IsPublic
+				            && t.IsClass
 				            && !t.IsAbstract
 				            && baseType.IsAssignableFrom(t)
 				            && Attribute.GetCustomAttribute(t, typeof(TestCaseAttribute), false) != null)
@@ -94,7 +97,11 @@ namespace Pennyworth.Inspection {
 		/// Instantiate all found cases
 		/// </summary>
 		private IEnumerable<AbstractTest> PrepareTests() {
-			return _testCases.Select(type => Activator.CreateInstance(type, _assembly, _path) as AbstractTest);
+			return _testCases.Select(type => Activator.CreateInstance(type,
+			                                                          BindingFlags.NonPublic | BindingFlags.Instance,
+			                                                          null,
+			                                                          new Object[] { _assembly, _path },
+			                                                          CultureInfo.CurrentCulture) as AbstractTest);
 		}
 	}
 }
