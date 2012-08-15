@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{AD8BAD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pennyworth.Inspection", "Pennyworth.Inspection\Pennyworth.Inspection.csproj", "{A872DFFF-0A98-47E9-9B6E-F09A774A3E4E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pennyworth.Tests", "Pennyworth.Tests\Pennyworth.Tests.csproj", "{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,6 +24,16 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{838B0CF1-7A60-4DB6-86EE-16B6BAACAC7D}.Release|x86.ActiveCfg = Release|Any CPU
 		{84E132C3-F3A0-4B20-BD35-DA93F64B1E27}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{84E132C3-F3A0-4B20-BD35-DA93F64B1E27}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
 		{84E132C3-F3A0-4B20-BD35-DA93F64B1E27}.Debug|Mixed Platforms.Build.0 = Debug|x86

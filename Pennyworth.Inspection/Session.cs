@@ -16,7 +16,7 @@ namespace Pennyworth.Inspection {
 	/// Assemblies are loaded into a separate AppDomain which is unloaded after all
 	/// tests have concluded.
 	/// </remarks>
-	public sealed class Session : IDisposable {
+	public sealed class Session : ISession {
 		private AppDomain _appDomain;
 
 		private readonly String           _basePath;
@@ -38,10 +38,10 @@ namespace Pennyworth.Inspection {
 			CreateWorkerDomain(Path.GetDirectoryName(_basePath), cacheDirPath);
 		}
 
-		public void Add(IEnumerable<String> assemblies) {
-			Debug.Assert(assemblies != null);
+		public void Add(IEnumerable<String> paths) {
+			Debug.Assert(paths != null);
 
-			foreach (var assembly in assemblies) {
+			foreach (var assembly in paths) {
 				var runner = CreateRunner(assembly);
 				_runners.Add(new RunnerInfo {
 					AssemblyInfo = runner.AssemblyInfo,
@@ -130,7 +130,7 @@ namespace Pennyworth.Inspection {
 	}
 
 	[Serializable]
-	public struct RunnerInfo {
+	public class RunnerInfo {
 		public AssemblyInfo AssemblyInfo { get; set; }
 		public Runner Runner { get; set; }
 	}
@@ -139,7 +139,7 @@ namespace Pennyworth.Inspection {
 	/// Used to populate the list of results and getting data across AppDomains
 	/// </summary>
 	[Serializable]
-	public struct FaultInfo {
+	public class FaultInfo {
 		public String FaultType     { get; set; }
 		public String MemberType    { get; set; }
 		public String Path          { get; set; }

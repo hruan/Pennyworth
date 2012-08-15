@@ -5,14 +5,19 @@ using NLog;
 
 namespace Pennyworth.Inspection {
 	public class SessionManager {
-		private readonly List<FaultInfo> _faults;
+		private readonly ICollection<FaultInfo> _faults;
 		private readonly HashSet<AssemblyInfo> _registry;
 		private readonly Logger _log;
 		
-		private Session _currentSession;
+		private ISession _currentSession;
 
 		public IEnumerable<FaultInfo> Faults {
 			get { return _faults; }
+		}
+
+		public ISession CurrentSession {
+			get { return _currentSession; }
+			set { _currentSession = value; }
 		}
 
 		public SessionManager() {
@@ -42,7 +47,7 @@ namespace Pennyworth.Inspection {
 				.ToList()
 				.ForEach(x => _faults.Add(x));
 
-			return _faults.Any();
+			return _faults.Count <= 0;
 		}
 
 		private void Discard(IEnumerable<AssemblyInfo> ignored) {

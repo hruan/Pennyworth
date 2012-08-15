@@ -46,7 +46,7 @@ namespace Pennyworth {
 					faults.ItemsSource = sm.Faults;
 					using (var session = sm.CreateSession(basePath)) {
 						sm.Add(assemblies);
-						var hasFaults = sm.RunTests();
+						var hasFaults = !sm.RunTests();
 
 						imageResult.Source = hasFaults ? _nayImage : _yayImage;
 					}

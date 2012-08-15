@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ISession.cs" />
     <Compile Include="Tests\AbstractTest.cs" />
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Tests\IndirectRecursiveCalls.cs" />
