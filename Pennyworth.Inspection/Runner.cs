@@ -16,12 +16,25 @@ namespace Pennyworth.Inspection {
 	/// <remarks>
 	/// Can be controlled across AppDomains.
 	/// </remarks>
-	public sealed class Runner : MarshalByRefObject {
-		private readonly Assembly                  _assembly;
-		private readonly String                    _path;
-		private readonly ICollection<AbstractTest> _preparedTests;
+	public sealed class Runner : MarshalByRefObject, IRunner {
+		private Assembly _assembly;
+		private ICollection<ITest> _preparedTests;
+
+		private readonly String _path;
 
 		private static readonly ICollection<Type> _testCases;
+
+		internal Assembly Assembly
+		{
+			get { return _assembly; }
+			set { _assembly = value; }
+		}
+
+		internal ICollection<ITest> Tests
+		{
+			get { return _preparedTests; }
+			set { _preparedTests = value; }
+		}
 
 		/// <summary>
 		/// Find tests through reflection when type is loaded
@@ -99,10 +112,15 @@ namespace Pennyworth.Inspection {
 			}
 		}
 
+		public void AddTest(ITest test)
+		{
+			_preparedTests.Add(test);
+		}
+
 		/// <summary>
 		/// Instantiate all found cases
 		/// </summary>
-		private IEnumerable<AbstractTest> PrepareTests()
+		private IEnumerable<ITest> PrepareTests()
 		{
 			return _testCases.Select(type => Activator.CreateInstance(type,
 				BindingFlags.NonPublic | BindingFlags.Instance,

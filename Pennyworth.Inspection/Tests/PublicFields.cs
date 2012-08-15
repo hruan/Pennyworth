@@ -8,7 +8,7 @@ namespace Pennyworth.Inspection.Tests {
 		internal PublicFields(Assembly assembly, String path)
 			: base(assembly, path) {}
 
-		internal override Boolean Run() {
+		public override Boolean Run() {
 			var faults = Assembly.GetTypes()
 				.Where(t => !t.IsNested)
 				.SelectMany(t => t.GetFields(BindingFlags.Instance

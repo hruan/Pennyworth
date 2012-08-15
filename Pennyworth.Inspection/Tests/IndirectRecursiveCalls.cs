@@ -7,7 +7,7 @@ namespace Pennyworth.Inspection.Tests {
 		internal IndirectRecursiveCalls(Assembly assembly, string path)
 			: base(assembly, path) {}
 
-		internal override Boolean Run() {
+		public override Boolean Run() {
 			var faults = new MethodCallHelper(Assembly).GetIndirectRecursiveCalls();
 			foreach (var fault in faults) {
 				Faults.Add(fault);

@@ -15,7 +15,7 @@ namespace Pennyworth.Inspection {
 			get { return _faults; }
 		}
 
-		public ISession CurrentSession {
+		internal ISession CurrentSession {
 			get { return _currentSession; }
 			set { _currentSession = value; }
 		}

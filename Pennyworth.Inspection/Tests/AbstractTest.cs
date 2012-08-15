@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 
 namespace Pennyworth.Inspection.Tests {
-	internal abstract class AbstractTest {
+	public abstract class AbstractTest : ITest {
 		private readonly Assembly         _assembly;
 		private readonly List<MemberInfo> _faults;
 
@@ -35,7 +35,7 @@ namespace Pennyworth.Inspection.Tests {
 		/// to query and retrieve the results respectively.
 		/// </remarks>
 		/// <returns><c>true</c> if tests ran successfully; <c>false</c> otherwise</returns>
-		internal abstract Boolean Run();
+		public abstract Boolean Run();
 
 		/// <summary>
 		/// Returns the faults detected by a test case
@@ -45,7 +45,7 @@ namespace Pennyworth.Inspection.Tests {
 		/// Assembly under test is only loaded in this AppDomain.
 		/// </remarks>
 		/// <seealso cref="Extensions.ToFaultInfo"/>.
-		internal IEnumerable<FaultInfo> GetFaults() {
+		public IEnumerable<FaultInfo> GetFaults() {
 			var caseName = Attribute.GetCustomAttribute(GetType(), typeof(TestCaseAttribute)) as TestCaseAttribute;
 
 			return _faults.ToFaultInfo(caseName != null ? caseName.Name : String.Empty, _assemblyLocation);
@@ -54,7 +54,7 @@ namespace Pennyworth.Inspection.Tests {
 		/// <summary>
 		/// Whether the test case found any faults
 		/// </summary>
-		internal Boolean HasFaults {
+		public Boolean HasFaults {
 			get { return _faults.Any(); }
 		}
 	}
@@ -64,7 +64,7 @@ namespace Pennyworth.Inspection.Tests {
 	/// </summary>
 	[Serializable]
 	[AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
-	internal sealed class TestCaseAttribute : Attribute {
+	public sealed class TestCaseAttribute : Attribute {
 		private readonly String _name;
 
 		public String Name {
