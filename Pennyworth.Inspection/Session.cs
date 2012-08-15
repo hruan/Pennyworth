@@ -19,65 +19,75 @@ namespace Pennyworth.Inspection {
 	public sealed class Session : ISession {
 		private AppDomain _appDomain;
 
-		private readonly String           _basePath;
-		private readonly List<FaultInfo>  _faults;
-		private readonly Logger           _log;
-		private readonly List<RunnerInfo> _runners;
+		private readonly Logger                  _log;
+		private readonly String                  _basePath;
+		private readonly ICollection<FaultInfo>  _faults;
+		private readonly ICollection<RunnerInfo> _runners;
 
-		public Session(String basePath) {
+		public Session(String basePath)
+		{
 			Debug.Assert(!String.IsNullOrEmpty(basePath));
 
 			_basePath = basePath;
-			_runners  = new List<RunnerInfo>();
-			_faults   = new List<FaultInfo>();
-			_log      = LogManager.GetLogger(GetType().Name);
+			_runners = new List<RunnerInfo>();
+			_faults = new List<FaultInfo>();
+			_log = LogManager.GetLogger(GetType().Name);
 
 			var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-							   + Path.DirectorySeparatorChar + "Cache";
+			                   + Path.DirectorySeparatorChar + "Cache";
 
 			CreateWorkerDomain(Path.GetDirectoryName(_basePath), cacheDirPath);
 		}
 
-		public void Add(IEnumerable<String> paths) {
+		public void Add(IEnumerable<String> paths)
+		{
 			Debug.Assert(paths != null);
 
 			foreach (var assembly in paths) {
 				var runner = CreateRunner(assembly);
 				_runners.Add(new RunnerInfo {
 					AssemblyInfo = runner.AssemblyInfo,
-					Runner       = runner
+					Runner = runner
 				});
 			}
 		}
 
-		public Boolean Remove(IEnumerable<AssemblyInfo> assemblies) {
+		public Boolean Remove(IEnumerable<AssemblyInfo> assemblies)
+		{
 			Debug.Assert(assemblies != null);
 
 			var dupes = assemblies.Select(assembly =>
-				_runners.First(x =>
-					x.AssemblyInfo.Path.Equals(assembly.Path, StringComparison.OrdinalIgnoreCase)
-					&& x.AssemblyInfo.Equals(assembly)
-				)
-			);
+			                              _runners.First(x =>
+			                                             x.AssemblyInfo.Path.Equals(assembly.Path,
+				                                             StringComparison.OrdinalIgnoreCase)
+			                                             && x.AssemblyInfo.Equals(assembly)
+				                              )
+				);
 
 			return dupes.All(x => _runners.Remove(x));
 		}
 
-		public IEnumerable<FaultInfo> Inspect() {
+		public IEnumerable<FaultInfo> Inspect()
+		{
 			var tasks = new List<Task<Boolean>>(_runners.Count);
 			tasks.AddRange(_runners.Select(x => Task.Factory.StartNew(() => x.Runner.RunTests())));
 			Task.WaitAll(tasks.Cast<Task>().ToArray());
 
-			_faults.AddRange(_runners.Where(r => r.Runner.HasFaults).SelectMany(x => x.Runner.GetFaults()));
+			_runners.Where(r => r.Runner.HasFaults)
+				.SelectMany(x => x.Runner.GetFaults())
+				.ToList()
+				.ForEach(x => _faults.Add(x));
 
 			return _faults;
 		}
 
-		public IEnumerable<AssemblyInfo> PreparedAssemblies {
+		public IEnumerable<AssemblyInfo> PreparedAssemblies
+		{
 			get { return _runners.Select(x => x.AssemblyInfo); }
 		}
 
-		public void Dispose() {
+		public void Dispose()
+		{
 			if (_appDomain != null) {
 				AppDomain.Unload(_appDomain);
 				_log.Debug("Worker domain unloaded.");
@@ -92,14 +102,15 @@ namespace Pennyworth.Inspection {
 		/// </summary>
 		/// <param name="name">friendly name of the AppDomain</param>
 		/// <param name="cachePath">where to shadow copy assemblies</param>
-		private void CreateWorkerDomain(String name, String cachePath) {
+		private void CreateWorkerDomain(String name, String cachePath)
+		{
 			_appDomain = AppDomain.CreateDomain(name,
-												null,
-												new AppDomainSetup {
-													CachePath = cachePath,
-													DisallowCodeDownload = true,
-													ShadowCopyFiles = "true"
-												});
+				null,
+				new AppDomainSetup {
+					CachePath = cachePath,
+					DisallowCodeDownload = true,
+					ShadowCopyFiles = "true"
+				});
 			_log.Debug("Created worker AppDomain.");
 		}
 
@@ -108,19 +119,20 @@ namespace Pennyworth.Inspection {
 		/// </summary>
 		/// <param name="path">path to assembly to test</param>
 		/// <returns>instante of <see cref="Runner"/>; null if instantiation failed</returns>
-		private Runner CreateRunner(String path) {
+		private Runner CreateRunner(String path)
+		{
 			Runner runner = null;
 
 			try {
-				runner = (Runner) _appDomain
-					                      .CreateInstanceFromAndUnwrap(Assembly.GetExecutingAssembly().Location,
-					                                                   typeof(Runner).FullName,
-					                                                   false,
-					                                                   BindingFlags.Default,
-					                                                   null,
-					                                                   new Object[] {path},
-					                                                   null,
-					                                                   null);
+				runner = (Runner) _appDomain.CreateInstanceFromAndUnwrap(
+					Assembly.GetExecutingAssembly().Location,
+					typeof(Runner).FullName,
+					false,
+					BindingFlags.Default,
+					null,
+					new Object[] { path },
+					null,
+					null);
 			} catch (TargetInvocationException ex) {
 				_log.Error("Couldn't instantiate test runner: {0}", ex.InnerException.Message);
 			}
@@ -132,7 +144,7 @@ namespace Pennyworth.Inspection {
 	[Serializable]
 	public class RunnerInfo {
 		public AssemblyInfo AssemblyInfo { get; set; }
-		public Runner Runner { get; set; }
+		public Runner       Runner       { get; set; }
 	}
 
 	/// <summary>

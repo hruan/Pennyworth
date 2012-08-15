@@ -17,16 +17,17 @@ namespace Pennyworth.Inspection {
 	/// Can be controlled across AppDomains.
 	/// </remarks>
 	public sealed class Runner : MarshalByRefObject {
-		private readonly Assembly           _assembly;
-		private readonly String             _path;
-		private readonly List<AbstractTest> _preparedTests;
+		private readonly Assembly                  _assembly;
+		private readonly String                    _path;
+		private readonly ICollection<AbstractTest> _preparedTests;
 
-		private static readonly List<Type> _testCases;
+		private static readonly ICollection<Type> _testCases;
 
 		/// <summary>
 		/// Find tests through reflection when type is loaded
 		/// </summary>
-		static Runner() {
+		static Runner()
+		{
 			var baseType = typeof(AbstractTest);
 
 			_testCases = Assembly.GetExecutingAssembly()
@@ -46,10 +47,11 @@ namespace Pennyworth.Inspection {
 		/// only run if registration succeeds.
 		/// </summary>
 		/// <param name="path">path to the assembly to test</param>
-		public Runner(String path) {
+		public Runner(String path)
+		{
 			try {
-				_path          = path;
-				_assembly      = Assembly.LoadFile(path);
+				_path = path;
+				_assembly = Assembly.LoadFile(path);
 				_preparedTests = PrepareTests().ToList();
 			} catch (ArgumentException argumentException) {
 				Debug.WriteLine(argumentException.ToString());
@@ -61,13 +63,15 @@ namespace Pennyworth.Inspection {
 		/// <summary>
 		/// Execute prepared tests on given assembly
 		/// </summary>
-		public Boolean RunTests() {
+		public Boolean RunTests()
+		{
 			Debug.Assert(_preparedTests != null);
 
 			return _preparedTests.All(test => test.Run());
 		}
 
-		public Boolean HasFaults {
+		public Boolean HasFaults
+		{
 			get { return _preparedTests.Any(t => t.HasFaults); }
 		}
 
@@ -75,13 +79,15 @@ namespace Pennyworth.Inspection {
 		/// Gets the faults from executed tests; results are flattened
 		/// </summary>
 		/// <returns>flattened list of faults from all the tests; empty list if no faults were found</returns>
-		public IEnumerable<FaultInfo> GetFaults() {
+		public IEnumerable<FaultInfo> GetFaults()
+		{
 			return HasFaults
 				       ? _preparedTests.SelectMany(t => t.GetFaults()).ToList()
 				       : Enumerable.Empty<FaultInfo>().ToList();
 		}
 
-		public AssemblyInfo AssemblyInfo {
+		public AssemblyInfo AssemblyInfo
+		{
 			get {
 				var attr = Attribute.GetCustomAttribute(_assembly, typeof(GuidAttribute)) as GuidAttribute;
 
@@ -96,12 +102,13 @@ namespace Pennyworth.Inspection {
 		/// <summary>
 		/// Instantiate all found cases
 		/// </summary>
-		private IEnumerable<AbstractTest> PrepareTests() {
+		private IEnumerable<AbstractTest> PrepareTests()
+		{
 			return _testCases.Select(type => Activator.CreateInstance(type,
-			                                                          BindingFlags.NonPublic | BindingFlags.Instance,
-			                                                          null,
-			                                                          new Object[] { _assembly, _path },
-			                                                          CultureInfo.CurrentCulture) as AbstractTest);
+				BindingFlags.NonPublic | BindingFlags.Instance,
+				null,
+				new Object[] { _assembly, _path },
+				CultureInfo.CurrentCulture) as AbstractTest);
 		}
 	}
 }

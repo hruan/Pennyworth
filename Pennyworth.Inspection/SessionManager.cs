@@ -6,8 +6,8 @@ using NLog;
 namespace Pennyworth.Inspection {
 	public class SessionManager {
 		private readonly ICollection<FaultInfo> _faults;
-		private readonly HashSet<AssemblyInfo> _registry;
-		private readonly Logger _log;
+		private readonly ISet<AssemblyInfo>     _registry;
+		private readonly Logger                 _log;
 		
 		private ISession _currentSession;
 
