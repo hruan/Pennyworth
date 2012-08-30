@@ -15,19 +15,20 @@ namespace Pennyworth.Inspection {
     /// in finding out recursive and indirect recursive calls, metadata tokens are resolved
     /// using the referenced assembly's modules.
     /// </remarks>
-    internal sealed class MethodCallHelper {
-        private readonly Assembly                            _assembly;
-        private readonly Dictionary<MethodInfo, Byte[]>      _methodILBytes;
-        private readonly List<Tuple<MethodInfo, MethodInfo>> _calls;
-        private readonly ILookup<MethodInfo, MethodInfo>     _callsLookup;
-        private readonly Logger                              _logger;
+    internal sealed class InspectionHelper {
+        private readonly Assembly _assembly;
+        private readonly IDictionary<MethodInfo, Byte[]> _methodILBytes;
+        private readonly ICollection<Tuple<MethodInfo, MethodInfo>> _calls;
+        private readonly ILookup<MethodInfo, MethodInfo> _callsLookup;
+        private readonly Logger _logger;
 
-        private static readonly Dictionary<Int16, OpCode> _opcodes;
+        private static readonly IDictionary<Int16, OpCode> _opcodes;
 
         /// <summary>
         /// Map bytecode to OpCode structure when the type is loaded
         /// </summary>
-        static MethodCallHelper() {
+        static InspectionHelper()
+        {
             _opcodes = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
                 .Select(fieldInfo => fieldInfo.GetValue(null))
                 .Cast<OpCode>()
@@ -39,7 +40,8 @@ namespace Pennyworth.Inspection {
         /// caller-callee method pairs
         /// </summary>
         /// <param name="assembly">the assembly that is being probed</param>
-        internal MethodCallHelper(Assembly assembly) {
+        internal InspectionHelper(Assembly assembly)
+        {
             _logger = LogManager.GetLogger(GetType().Name);
 
             _assembly = assembly;
@@ -63,27 +65,42 @@ namespace Pennyworth.Inspection {
         /// Find the recursive methods in the method pairs
         /// </summary>
         /// <returns>recursive methods as <see cref="IEnumerable{T}">IEnumerable</see> of MemberInfo</returns>
-        internal IEnumerable<MemberInfo> GetRecursiveCalls() {
-	        return _calls.Where(x => x.Item1 == x.Item2)
-		        .Distinct()
-		        .Select(x => x.Item1);
+        internal IEnumerable<MethodInfo> GetRecursiveCalls()
+        {
+            return _calls.Where(x => x.Item1 == x.Item2)
+                .Distinct()
+                .Select(x => x.Item1);
         }
 
         /// <summary>
         /// Find indirect recursive method call
         /// </summary>
         /// <returns>indirect methods as <see cref="IEnumerable{T}">IEnumerable</see> of MethodInfo</returns>
-        internal IEnumerable<MethodInfo> GetIndirectRecursiveCalls() {
-	        return _calls.Where(pair => _callsLookup[pair.Item2].Any(x => x != pair.Item2 && x == pair.Item1))
-		        .Distinct()
-		        .Select(x => x.Item1);
+        internal IEnumerable<MethodInfo> GetIndirectRecursiveCalls()
+        {
+            return _calls.Where(pair => _callsLookup[pair.Item2].Any(x => x != pair.Item2 && x == pair.Item1))
+                .Distinct()
+                .Select(x => x.Item1);
+        }
+
+        internal IEnumerable<FieldInfo> GetPublicFields()
+        {
+            return _assembly.GetTypes()
+                .Where(t => !t.IsNested)
+                .SelectMany(t => t.GetFields(BindingFlags.Instance
+                                             | BindingFlags.Public
+                                             | BindingFlags.DeclaredOnly))
+                // Apparently, enums have a special public field named value__
+                .Where(fi => fi.DeclaringType != null
+                             && !fi.DeclaringType.IsEnum);
         }
 
         /// <summary>
         /// Builds the caller-caller pairs
         /// </summary>
         /// <exception cref="NotSupportedException">Encountered unknown bytecode</exception>
-        private void FindCalls() {
+        private void FindCalls()
+        {
             foreach (var kvp in _methodILBytes) {
                 GetCalledMethods(kvp.Key, kvp.Value)
                     .Where(x => x != null)
@@ -99,7 +116,8 @@ namespace Pennyworth.Inspection {
         /// <param name="caller"><see cref="MethodInfo"/> of calling method</param>
         /// <param name="byteCodes">IL of calling method as a byte array</param>
         /// <returns></returns>
-        private IEnumerable<MethodInfo> GetCalledMethods(MethodInfo caller, Byte[] byteCodes) {
+        private IEnumerable<MethodInfo> GetCalledMethods(MethodInfo caller, Byte[] byteCodes)
+        {
             var offset = 0;
             while (offset < byteCodes.Length) {
                 Int16 opcode = byteCodes[offset];
@@ -143,7 +161,7 @@ namespace Pennyworth.Inspection {
 
                         case OperandType.InlineMethod:
                             if (instruction.FlowControl == FlowControl.Call) {
-                                var operand       = BitConverter.ToInt32(byteCodes, offset + instruction.Size);
+                                var operand = BitConverter.ToInt32(byteCodes, offset + instruction.Size);
                                 var callingMethod = caller.GetBaseDefinition();
 
                                 yield return ResolveMethod(callingMethod, operand);
@@ -170,7 +188,8 @@ namespace Pennyworth.Inspection {
         /// <param name="callingMethod">the caller</param>
         /// <param name="metadataToken">metadata token for the method being called</param>
         /// <returns></returns>
-        private MethodInfo ResolveMethod(MethodInfo callingMethod, Int32 metadataToken) {
+        private MethodInfo ResolveMethod(MethodInfo callingMethod, Int32 metadataToken)
+        {
             MethodBase called = null;
 
             foreach (var module in _assembly.GetModules()) {
@@ -184,7 +203,8 @@ namespace Pennyworth.Inspection {
                     _logger.Warn("A member seem to have been lost; out-of-date assembly? {0}", ex.Message);
                 }
 
-                if (called != null) break;
+                if (called != null)
+                    break;
             }
 
             return called as MethodInfo;

@@ -64,12 +64,13 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="InspectionHelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RunnerTests.cs" />
     <Compile Include="SessionManagerTests.cs" />
+    <Compile Include="StubAssemblyBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
