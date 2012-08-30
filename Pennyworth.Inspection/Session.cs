@@ -57,12 +57,12 @@ namespace Pennyworth.Inspection {
 			Debug.Assert(assemblies != null);
 
 			var dupes = assemblies.Select(assembly =>
-			                              _runners.First(x =>
-			                                             x.AssemblyInfo.Path.Equals(assembly.Path,
-				                                             StringComparison.OrdinalIgnoreCase)
-			                                             && x.AssemblyInfo.Equals(assembly)
-				                              )
-				);
+				_runners.First(x =>
+					x.AssemblyInfo.Path.Equals(assembly.Path,
+						StringComparison.OrdinalIgnoreCase)
+						&& x.AssemblyInfo.Equals(assembly)
+				)
+			);
 
 			return dupes.All(x => _runners.Remove(x));
 		}
