@@ -17,18 +17,12 @@ namespace Pennyworth.Inspection {
 	/// Can be controlled across AppDomains.
 	/// </remarks>
 	public sealed class Runner : MarshalByRefObject, IRunner {
-		private Assembly _assembly;
 		private ICollection<ITest> _preparedTests;
 
+		private readonly Assembly _assembly;
 		private readonly String _path;
 
 		private static readonly ICollection<Type> _testCases;
-
-		internal Assembly Assembly
-		{
-			get { return _assembly; }
-			set { _assembly = value; }
-		}
 
 		internal ICollection<ITest> Tests
 		{
@@ -76,7 +70,7 @@ namespace Pennyworth.Inspection {
 		/// <summary>
 		/// Execute prepared tests on given assembly
 		/// </summary>
-		public Boolean RunTests()
+		public Boolean Run()
 		{
 			Debug.Assert(_preparedTests != null);
 

@@ -70,7 +70,7 @@ namespace Pennyworth.Inspection {
 		public IEnumerable<FaultInfo> Inspect()
 		{
 			var tasks = new List<Task<Boolean>>(_runners.Count);
-			tasks.AddRange(_runners.Select(x => Task.Factory.StartNew(() => x.Runner.RunTests())));
+			tasks.AddRange(_runners.Select(x => Task.Factory.StartNew(() => x.Runner.Run())));
 			Task.WaitAll(tasks.Cast<Task>().ToArray());
 
 			_runners.Where(r => r.Runner.HasFaults)

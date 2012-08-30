@@ -29,7 +29,7 @@ namespace Pennyworth.Tests {
 		[Test]
 		public void RunTests_CallsRunOnAllPreparedTests()
 		{
-			_sut.RunTests();
+			_sut.Run();
 
 			_sut.Tests.All(x => x.Received(1).Run());
 		}
@@ -40,7 +40,7 @@ namespace Pennyworth.Tests {
 		{
 			_sut.Tests.First().Run().Returns(returnValue);
 
-			Assert.AreEqual(returnValue, _sut.RunTests());
+			Assert.AreEqual(returnValue, _sut.Run());
 		}
 
 		[Test]
