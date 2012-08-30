@@ -35,16 +35,14 @@ namespace Pennyworth {
 			imageResult.Source = null;
 
 			if (e.Data.GetDataPresent("FileDrop")) {
-				var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"))
-					.Select(p => new FileInfo(p))
-					.ToList();
+				var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"));
 				var assemblies = DropHelper.GetAssembliesFromDropData(paths).ToList();
 				var basePath   = DropHelper.GetBaseDir(paths);
 
 				if (assemblies.Any()) {
 					var sm = new SessionManager();
 					faults.ItemsSource = sm.Faults;
-					using (var session = sm.CreateSession(basePath)) {
+					using (sm.CreateSession(basePath)) {
 						sm.Add(assemblies);
 						var hasFaults = !sm.RunTests();
 
