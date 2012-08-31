@@ -13,9 +13,10 @@ namespace Pennyworth {
 	public sealed partial class MainWindow {
 		private readonly BitmapImage _yayImage;
 		private readonly BitmapImage _nayImage;
-		private readonly Logger      _logger;
+		private readonly Logger _logger;
 
-		public MainWindow() {
+		public MainWindow()
+		{
 			InitializeComponent();
 
 			_logger = LogManager.GetLogger(GetType().Name);
@@ -31,13 +32,14 @@ namespace Pennyworth {
 			versionLabel.Content = "Version: " + Assembly.GetExecutingAssembly().GetName().Version;
 		}
 
-		private void Window_Drop(object sender, DragEventArgs e) {
+		private void Window_Drop(object sender, DragEventArgs e)
+		{
 			imageResult.Source = null;
 
 			if (e.Data.GetDataPresent("FileDrop")) {
 				var paths = ((IEnumerable<String>) e.Data.GetData("FileDrop"));
 				var assemblies = DropHelper.GetAssembliesFromDropData(paths).ToList();
-				var basePath   = DropHelper.GetBaseDir(paths);
+				var basePath = DropHelper.GetBaseDir(paths);
 
 				if (assemblies.Any()) {
 					var sm = new SessionManager();

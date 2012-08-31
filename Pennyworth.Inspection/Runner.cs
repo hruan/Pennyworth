@@ -41,10 +41,10 @@ namespace Pennyworth.Inspection {
 				// Tests are internal -- can't use GetExportedTypes()
 				.GetTypes()
 				.Where(t => !t.IsPublic
-				            && t.IsClass
-				            && !t.IsAbstract
-				            && baseType.IsAssignableFrom(t)
-				            && Attribute.GetCustomAttribute(t, typeof(TestCaseAttribute), false) != null)
+					&& t.IsClass
+					&& !t.IsAbstract
+					&& baseType.IsAssignableFrom(t)
+					&& Attribute.GetCustomAttribute(t, typeof(TestCaseAttribute), false) != null)
 				.ToList();
 		}
 
@@ -89,13 +89,14 @@ namespace Pennyworth.Inspection {
 		public IEnumerable<FaultInfo> GetFaults()
 		{
 			return HasFaults
-				       ? _preparedTests.SelectMany(t => t.GetFaults()).ToList()
-				       : Enumerable.Empty<FaultInfo>().ToList();
+				? _preparedTests.SelectMany(t => t.GetFaults()).ToList()
+				: Enumerable.Empty<FaultInfo>().ToList();
 		}
 
 		public AssemblyInfo AssemblyInfo
 		{
-			get {
+			get
+			{
 				var attr = Attribute.GetCustomAttribute(_assembly, typeof(GuidAttribute)) as GuidAttribute;
 
 				return new AssemblyInfo {

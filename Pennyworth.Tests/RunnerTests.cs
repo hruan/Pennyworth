@@ -55,7 +55,7 @@ namespace Pennyworth.Tests {
 		[Test]
 		public void HasFaults_CallsHasFaultsOnAtleastOneTest()
 		{
-			var _ =_sut.HasFaults;
+			var _ = _sut.HasFaults;
 
 			_sut.Tests.Any(x => x.Received().HasFaults);
 		}

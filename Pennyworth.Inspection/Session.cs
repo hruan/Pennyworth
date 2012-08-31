@@ -34,7 +34,7 @@ namespace Pennyworth.Inspection {
 			_log = LogManager.GetLogger(GetType().Name);
 
 			var cacheDirPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-			                   + Path.DirectorySeparatorChar + "Cache";
+				+ Path.DirectorySeparatorChar + "Cache";
 
 			CreateWorkerDomain(Path.GetDirectoryName(_basePath), cacheDirPath);
 		}
